@@ -1,0 +1,9 @@
+services:
+  collector:
+    build:
+      context: .
+    environment:
+      EXCHANGE: bybit
+      CONTRACT: inverse
+      SYMBOL: SOLUSD
+    restart: unless-stopped

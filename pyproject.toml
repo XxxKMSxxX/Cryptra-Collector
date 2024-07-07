@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "collector"
+version = "0.1.0"
+description = ""
+authors = ["XxxKMSxxX <kms1342152@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+pybotters = "^1.3.0"
+boto3 = "^1.34.140"
+aiohttp = "^3.9.5"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
