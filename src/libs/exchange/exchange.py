@@ -14,11 +14,6 @@ class Exchange(ABC):
 
     @property
     @abstractmethod
-    def aws_region(self) -> str:
-        raise NotImplementedError
-
-    @property
-    @abstractmethod
     def public_ws_url(self) -> str:
         raise NotImplementedError
 

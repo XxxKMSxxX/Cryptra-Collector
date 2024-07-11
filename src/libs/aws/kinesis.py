@@ -7,9 +7,9 @@ import boto3
 
 class Kinesis:
     def __init__(self, aws_region):
-        self._region = aws_region
+        self._aws_region = aws_region
         self._kinesis_client = boto3.client(
-            'kinesis', region_name=self._region
+            'kinesis', region_name=self._aws_region
         )
 
     def publish(self, stream_name: str, records: List[Dict]):

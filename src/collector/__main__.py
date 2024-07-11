@@ -17,7 +17,7 @@ async def main(args: Namespace) -> None:
         f"{args.exchange}-{args.contract}-{args.symbol.upper()}"
     )
     exchange = load_exchange(args)
-    kinesis = Kinesis(exchange.aws_region)
+    kinesis = Kinesis(args.aws_region)
 
     def handler(msg: Any, ws: ClientWebSocketResponse) -> None:
         messages = exchange.on_message(msg)
@@ -43,6 +43,7 @@ if __name__ == "__main__":
         parser.add_argument('exchange', type=str)
         parser.add_argument('contract', type=str)
         parser.add_argument('symbol', type=str)
+        parser.add_argument('aws_region', type=str)
         args: Namespace = parser.parse_args()
         print(args)
         asyncio.run(main(args))

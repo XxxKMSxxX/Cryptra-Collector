@@ -6,4 +6,5 @@ services:
       EXCHANGE: bybit
       CONTRACT: inverse
       SYMBOL: SOLUSD
+      AWS_REGION: ap-southeast-1
     restart: unless-stopped

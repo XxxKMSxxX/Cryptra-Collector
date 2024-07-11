@@ -11,10 +11,6 @@ class Bybit(Exchange):
         self._ticker: Dict = {}
 
     @property
-    def aws_region(self) -> str:
-        return 'ap-southeast-1'
-
-    @property
     def public_ws_url(self) -> str:
         return f"wss://stream.bybit.com/v5/public/{self._contract}"
 

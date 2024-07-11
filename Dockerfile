@@ -4,4 +4,4 @@ COPY . .
 
 RUN pip install .
 
-CMD ["sh", "-c", "python -Bum collector ${EXCHANGE} ${CONTRACT} ${SYMBOL}"]
+CMD ["sh", "-c", "python -Bum collector ${EXCHANGE} ${CONTRACT} ${SYMBOL} ${AWS_REGION}"]
