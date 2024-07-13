@@ -8,5 +8,5 @@ module "iam" {
 
 module "ecr" {
   source = "./modules/ecr"
-  repository_name = "crypt-trading-platform"
+  repository_name = "collector"
 }
