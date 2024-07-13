@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - 'terraform/iam.tf'
+      - 'terraform/*'
 
 jobs:
   terraform:
