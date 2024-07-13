@@ -12,5 +12,5 @@ resource "aws_iam_policy" "execution_policy" {
 
 resource "aws_iam_user_policy_attachment" "github_actions_policy_attachment" {
   user       = "github-actions"
-  policy_arn = coalesce(data.aws_iam_policy.existing_execution_policy.arn, aws_iam_policy.execution_policy.arn)
+  policy_arn = length(data.aws_iam_policy.existing_execution_policy.arn) == 0 ? aws_iam_policy.execution_policy[0].arn : data.aws_iam_policy.existing_execution_policy.arn
 }
