@@ -24,23 +24,23 @@ if [ ! -f "$POLICY_FILE" ]; then
 fi
 
 # Navigate to the working directory
-cd $WORKING_DIR || exit
+cd $WORKING_DIR || { echo "Failed to navigate to working directory"; exit 1; }
 
 # Run Pike to generate the minimal IAM policy
-pike make .
+pike scan -d .
 if [ $? -ne 0 ]; then
     echo "Pike execution failed."
     exit 1
 fi
 
+# Navigate back to the root directory
+cd - || { echo "Failed to navigate back to root directory"; exit 1; }
+
 # Check if policy.json has changed
-if git diff --quiet $POLICY_FILE; then
+if git diff --quiet -- "$POLICY_FILE"; then
     echo "No changes to policy.json"
 else
     echo "policy.json has been updated, committing changes..."
-    git add $POLICY_FILE
+    git add -- "$POLICY_FILE"
     git commit -m "Update IAM policy"
 fi
-
-# Navigate back to the original directory
-cd - || exit
