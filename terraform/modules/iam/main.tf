@@ -5,7 +5,7 @@ data "aws_iam_policy" "existing_execution_policy" {
 resource "aws_iam_policy" "execution_policy" {
   name        = "github-actions-execution-policy"
   description = "Policy to allow AWS operations for github-actions user"
-  policy      = file("policy.json")
+  policy      = file("${path.module}/policy.json")
 
   count = length(data.aws_iam_policy.existing_execution_policy.arn) == 0 ? 1 : 0
 }
