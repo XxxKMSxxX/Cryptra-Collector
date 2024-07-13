@@ -1,0 +1,45 @@
+#!/bin/sh
+
+# Set the working directory to the Terraform directory
+WORKING_DIR="terraform"
+
+# Set the path to the policy.json file
+POLICY_FILE="$WORKING_DIR/modules/iam/policy.json"
+
+# Check if Go is installed
+if ! command -v go &> /dev/null; then
+    echo "Go could not be found. Please install Go first."
+    exit 1
+fi
+
+# Check if Pike is installed
+if ! command -v pike &> /dev/null; then
+    echo "Pike could not be found, installing..."
+    go install github.com/jameswoolfenden/pike@latest
+    if [ $? -ne 0 ]; then
+        echo "Failed to install Pike."
+        exit 1
+    fi
+fi
+
+# Navigate to the working directory
+cd $WORKING_DIR || exit
+
+# Run Pike to generate the minimal IAM policy
+pike make .
+if [ $? -ne 0 ]; then
+    echo "Pike execution failed."
+    exit 1
+fi
+
+# Check if policy.json has changed
+if git diff --quiet $POLICY_FILE; then
+    echo "No changes to policy.json"
+else
+    echo "policy.json has been updated, committing changes..."
+    git add $POLICY_FILE
+    git commit -m "Update IAM policy"
+fi
+
+# Navigate back to the original directory
+cd - || exit
