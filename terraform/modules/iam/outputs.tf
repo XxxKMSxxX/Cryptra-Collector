@@ -1,3 +1,3 @@
-output "ecr_policy_arn" {
-  value = aws_iam_policy.ecr_policy.arn
+output "execution_policy_arn" {
+  value = aws_iam_policy.execution_policy.arn
 }
