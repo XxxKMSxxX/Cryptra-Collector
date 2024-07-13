@@ -45,4 +45,5 @@ if git diff --quiet -- "$POLICY_FILE"; then
 else
     echo "policy.json has been updated, committing changes..."
     git add -- "$POLICY_FILE"
+    git commit -m "Update IAM policy"
 fi
