@@ -1,22 +1,16 @@
-resource "aws_iam_policy" "ecr_policy" {
-  name        = "github-actions-ecr-policy"
-  description = "Policy to allow ECR operations for github-actions user"
+data "aws_iam_policy" "existing_execution_policy" {
+  name = "github-actions-execution-policy"
+}
 
-  policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [
-      {
-        Action = [
-          "ecr:CreateRepository",
-        ],
-        Effect: "Allow",
-        Resource: "*"
-      }
-    ],
-  })
+resource "aws_iam_policy" "execution_policy" {
+  name        = "github-actions-execution-policy"
+  description = "Policy to allow AWS operations for github-actions user"
+  policy      = file("policy.json")
+
+  count = length(data.aws_iam_policy.existing_execution_policy.arn) == 0 ? 1 : 0
 }
 
 resource "aws_iam_user_policy_attachment" "github_actions_policy_attachment" {
   user       = "github-actions"
-  policy_arn = aws_iam_policy.ecr_policy.arn
+  policy_arn = coalesce(data.aws_iam_policy.existing_execution_policy.arn, aws_iam_policy.execution_policy.arn)
 }
