@@ -6,12 +6,6 @@ WORKING_DIR="terraform"
 # Set the path to the policy.json file
 POLICY_FILE="$WORKING_DIR/modules/iam/policy.json"
 
-# Check if Go is installed
-if ! command -v go &> /dev/null; then
-    echo "Go could not be found. Please install Go first."
-    exit 1
-fi
-
 # Check if Pike is installed
 if ! command -v pike &> /dev/null; then
     echo "Pike could not be found, installing..."
@@ -20,6 +14,13 @@ if ! command -v pike &> /dev/null; then
         echo "Failed to install Pike."
         exit 1
     fi
+fi
+
+# Ensure the policy.json file exists
+if [ ! -f "$POLICY_FILE" ]; then
+    echo "$POLICY_FILE does not exist. Creating an empty file."
+    mkdir -p "$(dirname "$POLICY_FILE")"
+    touch "$POLICY_FILE"
 fi
 
 # Navigate to the working directory
