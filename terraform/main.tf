@@ -1,3 +1,3 @@
 module "iam" {
-  source = "./iam.tf"
+  source = "./iam"
 }
