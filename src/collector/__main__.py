@@ -30,11 +30,17 @@ def start_flask_app():
 
 
 async def main(args: Namespace) -> None:
+<<<<<<< HEAD
     KINESIS_STREAM_NAME = (
         f"{args.exchange}-{args.contract}-{args.symbol.upper()}"
     )
+=======
+    # KINESIS_STREAM_NAME = (
+    #     f"{args.exchange}-{args.contract}-{args.symbol.upper()}"
+    # )
+>>>>>>> 34e993812a83e9917d4248a2af6dfaa63f710b02
     exchange = load_exchange(args)
-    kinesis = Kinesis(args.aws_region)
+    # kinesis = Kinesis(args.aws_region)
 
     def handler(msg: Any, ws: ClientWebSocketResponse) -> None:
         global first_message_received
@@ -42,9 +48,15 @@ async def main(args: Namespace) -> None:
             first_message_received = True
         messages = exchange.on_message(msg)
         if messages:
+<<<<<<< HEAD
             asyncio.create_task(
                 kinesis.publish(KINESIS_STREAM_NAME, messages)
             )
+=======
+            # asyncio.create_task(
+            #     kinesis.publish(KINESIS_STREAM_NAME, messages)
+            # )
+>>>>>>> 34e993812a83e9917d4248a2af6dfaa63f710b02
             print(messages, flush=True)
 
     flask_thread = Thread(target=start_flask_app)
