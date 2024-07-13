@@ -16,18 +16,19 @@ if ! command -v pike &> /dev/null; then
     fi
 fi
 
-# Ensure the policy.json file exists
-if [ ! -f "$POLICY_FILE" ]; then
-    echo "$POLICY_FILE does not exist. Creating an empty file."
+# Ensure the directory for policy.json exists
+if [ ! -d "$(dirname "$POLICY_FILE")" ]; then
+    echo "Creating directory for policy.json"
     mkdir -p "$(dirname "$POLICY_FILE")"
-    touch "$POLICY_FILE"
 fi
 
 # Navigate to the working directory
-cd $WORKING_DIR || { echo "Failed to navigate to working directory"; exit 1; }
+cd "$WORKING_DIR" || { echo "Failed to navigate to working directory"; exit 1; }
 
-# Run Pike to generate the minimal IAM policy
-pike scan -d .
+echo "Current directory: $(pwd)"
+
+# Run Pike to generate the minimal IAM policy and save to policy.json
+pike scan -d . > "$(pwd)/modules/iam/policy.json"
 if [ $? -ne 0 ]; then
     echo "Pike execution failed."
     exit 1
@@ -36,11 +37,12 @@ fi
 # Navigate back to the root directory
 cd - || { echo "Failed to navigate back to root directory"; exit 1; }
 
+echo "Current directory: $(pwd)"
+
 # Check if policy.json has changed
 if git diff --quiet -- "$POLICY_FILE"; then
     echo "No changes to policy.json"
 else
     echo "policy.json has been updated, committing changes..."
     git add -- "$POLICY_FILE"
-    git commit -m "Update IAM policy"
 fi
