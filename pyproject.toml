@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "collector"
+name = "Crypta-Collector"
 version = "0.1.0"
 description = ""
 authors = ["k6s"]
