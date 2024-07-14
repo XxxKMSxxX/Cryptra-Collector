@@ -3,7 +3,9 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from argparse import Namespace
 from typing import List, Dict, Any
+import hashlib
 import importlib
+import json
 
 
 class Exchange(ABC):
@@ -28,7 +30,7 @@ class Exchange(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def on_message(self, msg: Any) -> List:
+    def on_message(self, msg: Any) -> Dict[str, Any]:
         raise NotImplementedError
 
     @abstractmethod
@@ -42,6 +44,36 @@ class Exchange(ABC):
     @abstractmethod
     def _on_orderbook(self, msg: Any) -> List:
         raise NotImplementedError
+
+    def handle_message_with_hash(
+        self,
+        data: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
+        """データにハッシュを生成して付与する
+
+        Args:
+            data (List[Dict[str, Any]]): メッセージデータ
+
+        Returns:
+            Dict[str, Any]: ハッシュとデータを含む辞書
+        """
+        data_hash = self._generate_hash(data)
+        return {
+            'hash': data_hash,
+            'data': data,
+        }
+
+    def _generate_hash(self, data: Any) -> str:
+        """データに基づいてハッシュを生成する
+
+        Args:
+            data (Any): ハッシュを生成するためのデータ
+
+        Returns:
+            str: 生成されたハッシュ
+        """
+        data_string = json.dumps(data, sort_keys=True)
+        return hashlib.sha256(data_string.encode('utf-8')).hexdigest()
 
 
 def load_exchange(args: Namespace) -> Exchange:
