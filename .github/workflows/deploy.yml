@@ -6,6 +6,8 @@ on:
       - main
     types:
       - closed
+    paths:
+      - 'src/**'
 
 env:
   AWS_ROLE_ARN: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/${{ secrets.IAM_ROLE_NAME }}
