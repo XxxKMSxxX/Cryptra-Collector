@@ -1,10 +1,230 @@
+version: '3.9'
+
+x-collector: &collector
+  build:
+    context: .
+  restart: unless-stopped
+
+x-bybit: &bybit
+  EXCHANGE: bybit
+  AWS_REGION: ap-southeast-1
+
+x-binance: &binance
+  EXCHANGE: binance
+  AWS_REGION: ap-northeast-1
+
+x-bitflyer: &bitflyer
+  EXCHANGE: bitflyer
+  AWS_REGION: ap-northeast-1
+
+x-spot: &spot
+  CONTRACT: spot
+
+x-linear: &linear
+  CONTRACT: linear
+
+x-inverse: &inverse
+  CONTRACT: inverse
+
+x-usdt_perpetual: &usdt_perpetual
+  CONTRACT: usdt_perpetual
+
+x-fx: &fx
+  CONTRACT: fx
+
 services:
-  collector:
-    build:
-      context: .
+  # Bybit Spot
+  bybit-spot-btcusdt:
+    <<: *collector
+    container_name: bybit-spot-btcusdt
+    ports:
+      - 8080:8080
     environment:
-      EXCHANGE: bybit
-      CONTRACT: inverse
-      SYMBOL: SOLUSD
-      AWS_REGION: ap-southeast-1
-    restart: unless-stopped
+      <<: [*bybit, *spot]
+      SYMBOL: BTCUSDT
+
+  # bybit-spot-ethusdt:
+  #   <<: *collector
+  #   container_name: bybit-spot-ethusdt
+  #   ports:
+  #     - 8081:8080
+  #   environment:
+  #     <<: [*bybit, *spot]
+  #     SYMBOL: ETHUSDT
+
+  # bybit-spot-solusdt:
+  #   <<: *collector
+  #   container_name: bybit-spot-solusdt
+  #   ports:
+  #     - 8082:8080
+  #   environment:
+  #     <<: [*bybit, *spot]
+  #     SYMBOL: SOLUSDT
+
+  # # Bybit Linear
+  # bybit-linear-btcusdt:
+  #   <<: *collector
+  #   container_name: bybit-linear-btcusdt
+  #   ports:
+  #     - 8083:8080
+  #   environment:
+  #     <<: [*bybit, *linear]
+  #     SYMBOL: BTCUSDT
+
+  # bybit-linear-ethusdt:
+  #   <<: *collector
+  #   container_name: bybit-linear-ethusdt
+  #   ports:
+  #     - 8084:8080
+  #   environment:
+  #     <<: [*bybit, *linear]
+  #     SYMBOL: ETHUSDT
+
+  # bybit-linear-solusdt:
+  #   <<: *collector
+  #   container_name: bybit-linear-solusdt
+  #   ports:
+  #     - 8085:8080
+  #   environment:
+  #     <<: [*bybit, *linear]
+  #     SYMBOL: SOLUSDT
+
+  # # Bybit Inverse
+  # bybit-inverse-btcusd:
+  #   <<: *collector
+  #   container_name: bybit-inverse-btcusd
+  #   ports:
+  #     - 8086:8080
+  #   environment:
+  #     <<: [*bybit, *inverse]
+  #     SYMBOL: BTCUSD
+
+  # bybit-inverse-ethusd:
+  #   <<: *collector
+  #   container_name: bybit-inverse-ethusd
+  #   ports:
+  #     - 8087:8080
+  #   environment:
+  #     <<: [*bybit, *inverse]
+  #     SYMBOL: ETHUSD
+
+  # bybit-inverse-solusd:
+  #   <<: *collector
+  #   container_name: bybit-inverse-solusd
+  #   ports:
+  #     - 8088:8080
+  #   environment:
+  #     <<: [*bybit, *inverse]
+  #     SYMBOL: SOLUSD
+
+  # # Binance Spot
+  # binance-spot-btcusdt:
+  #   <<: *collector
+  #   container_name: binance-spot-btcusdt
+  #   ports:
+  #     - 8089:8080
+  #   environment:
+  #     <<: [*binance, *spot]
+  #     SYMBOL: btcusdt
+
+  # binance-spot-btcjpy:
+  #   <<: *collector
+  #   container_name: binance-spot-btcjpy
+  #   ports:
+  #     - 8090:8080
+  #   environment:
+  #     <<: [*binance, *spot]
+  #     SYMBOL: btcjpy
+
+  # binance-spot-ethusdt:
+  #   <<: *collector
+  #   container_name: binance-spot-ethusdt
+  #   ports:
+  #     - 8091:8080
+  #   environment:
+  #     <<: [*binance, *spot]
+  #     SYMBOL: ethusdt
+
+  # binance-spot-ethjpy:
+  #   <<: *collector
+  #   container_name: binance-spot-ethjpy
+  #   ports:
+  #     - 8092:8080
+  #   environment:
+  #     <<: [*binance, *spot]
+  #     SYMBOL: ethjpy
+
+  # binance-spot-solusdt:
+  #   <<: *collector
+  #   container_name: binance-spot-solusdt
+  #   ports:
+  #     - 8093:8080
+  #   environment:
+  #     <<: [*binance, *spot]
+  #     SYMBOL: solusdt
+
+  # binance-spot-soljpy:
+  #   <<: *collector
+  #   container_name: binance-spot-soljpy
+  #   ports:
+  #     - 8094:8080
+  #   environment:
+  #     <<: [*binance, *spot]
+  #     SYMBOL: soljpy
+
+  # # Binance USDT Perpetual
+  # binance-usdt_perpetual-btcusdt:
+  #   <<: *collector
+  #   container_name: binance-usdt_perpetual-btcusdt
+  #   ports:
+  #     - 8095:8080
+  #   environment:
+  #     <<: [*binance, *usdt_perpetual]
+  #     SYMBOL: btcusdt
+
+  # binance-usdt_perpetual-ethusdt:
+  #   <<: *collector
+  #   container_name: binance-usdt_perpetual-ethusdt
+  #   ports:
+  #     - 8096:8080
+  #   environment:
+  #     <<: [*binance, *usdt_perpetual]
+  #     SYMBOL: ethusdt
+
+  # binance-usdt_perpetual-solusdt:
+  #   <<: *collector
+  #   container_name: binance-usdt_perpetual-solusdt
+  #   ports:
+  #     - 8097:8080
+  #   environment:
+  #     <<: [*binance, *usdt_perpetual]
+  #     SYMBOL: solusdt
+
+  # # Bitflyer Spot
+  # bitflyer-spot-btcjpy:
+  #   <<: *collector
+  #   container_name: bitflyer-spot-btcjpy
+  #   ports:
+  #     - 8098:8080
+  #   environment:
+  #     <<: [*bitflyer, *spot]
+  #     SYMBOL: BTC_JPY
+
+  # bitflyer-spot-ethjpy:
+  #   <<: *collector
+  #   container_name: bitflyer-spot-ethjpy
+  #   ports:
+  #     - 8099:8080
+  #   environment:
+  #     <<: [*bitflyer, *spot]
+  #     SYMBOL: ETH_JPY
+
+  # # Bitflyer FX
+  # bitflyer-fx-fxbtcjpy:
+  #   <<: *collector
+  #   container_name: bitflyer-fx-fxbtcjpy
+  #   ports:
+  #     - 8100:8080
+  #   environment:
+  #     <<: [*bitflyer, *fx]
+  #     SYMBOL: FX_BTC_JPY

@@ -1,54 +1,38 @@
 from __future__ import annotations
 
+from aiohttp import ClientWebSocketResponse
 from argparse import ArgumentParser, Namespace
 from src.libs.aws import Kinesis
 from src.libs.exchange import load_exchange
-from aiohttp import ClientWebSocketResponse
+from src.libs.utils import LoggerManager, WSHealthCheck
 from typing import Any
 import asyncio
 import pybotters
 import signal
-import traceback
-from threading import Thread
-from flask import Flask, jsonify
 
-app = Flask(__name__)
-first_message_received = False
-
-
-@app.route('/health', methods=['GET'])
-def health_check():
-    global first_message_received
-    if first_message_received:
-        return jsonify(status="OK")
-    else:
-        return jsonify(status="Waiting for first message")
-
-
-def start_flask_app():
-    app.run(host='0.0.0.0', port=8080)
+logger_manager = LoggerManager(LoggerManager.INFO)
+logger = logger_manager.get_logger(__name__)
 
 
 async def main(args: Namespace) -> None:
+    health_check = WSHealthCheck()
+    health_check.run()
+
+    exchange = load_exchange(args)
+    kinesis = Kinesis(args.aws_region)
     KINESIS_STREAM_NAME = (
         f"{args.exchange}-{args.contract}-{args.symbol.upper()}"
     )
-    exchange = load_exchange(args)
-    kinesis = Kinesis(args.aws_region)
 
     def handler(msg: Any, ws: ClientWebSocketResponse) -> None:
-        global first_message_received
-        if not first_message_received:
-            first_message_received = True
-        messages = exchange.on_message(msg)
-        if messages:
+        if not health_check.first_message_received:
+            health_check.set_first_message_received(True)
+        message = exchange.on_message(msg)
+        if message:
             asyncio.create_task(
                 kinesis.publish(KINESIS_STREAM_NAME, messages)
             )
-            print(messages, flush=True)
-
-    flask_thread = Thread(target=start_flask_app)
-    flask_thread.start()
+            logger_manager.info(message)
 
     async with pybotters.Client() as client:
         ws = await client.ws_connect(
@@ -64,14 +48,22 @@ if __name__ == "__main__":
 
     try:
         parser = ArgumentParser()
-        parser.add_argument('exchange', type=str)
-        parser.add_argument('contract', type=str)
-        parser.add_argument('symbol', type=str)
-        parser.add_argument('aws_region', type=str)
+        parser.add_argument('exchange', type=str, help='取引所の名前')
+        parser.add_argument('contract', type=str, help='契約の種類')
+        parser.add_argument('symbol', type=str, help='取引シンボル')
+        parser.add_argument('aws_region', type=str, help='AWSリージョン')
+        parser.add_argument('--log_level', type=str, default='INFO', choices=[
+            'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'
+        ], help='ログレベル')
         args: Namespace = parser.parse_args()
-        print(args)
+
+        log_level = getattr(LoggerManager, args.log_level)
+        logger_manager = LoggerManager(log_level)
+        logger = logger_manager.get_logger(__name__)
+
+        logger.info(f"Starting with args: {args}")
         asyncio.run(main(args))
     except KeyboardInterrupt:
-        pass
+        logger_manager.warning("KeyboardInterrupt detected, exiting.")
     except Exception:
-        traceback.print_exc()
+        logger_manager.error("Exception occurred", exc_info=True)
