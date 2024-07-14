@@ -30,7 +30,7 @@ async def main(args: Namespace) -> None:
         message = exchange.on_message(msg)
         if message:
             asyncio.create_task(
-                kinesis.publish(KINESIS_STREAM_NAME, messages)
+                kinesis.publish(KINESIS_STREAM_NAME, message)
             )
             logger_manager.info(message)
 
