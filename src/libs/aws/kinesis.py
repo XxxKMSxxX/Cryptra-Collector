@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from json import dumps
-from typing import List, Dict
+from typing import Dict
 import boto3
 
 
@@ -12,15 +12,11 @@ class Kinesis:
             'kinesis', region_name=self._aws_region
         )
 
-    def publish(self, stream_name: str, records: List[Dict]):
-        entries = [{
-            'Data': dumps(record),
-            'PartitionKey': 'partition_key'
-        } for record in records]
-
-        response = self._kinesis_client.put_records(
+    def publish(self, stream_name: str, record: Dict):
+        return self._kinesis_client.put_record(
             StreamName=stream_name,
-            Records=entries
+            Records={
+                'Data': dumps(record),
+                'PartitionKey': 'partition_key'
+            }
         )
-
-        return response
