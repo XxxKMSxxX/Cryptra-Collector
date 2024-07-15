@@ -1,5 +1,6 @@
-from flask import Flask, jsonify, Response
+from flask import Flask, jsonify
 from threading import Thread
+from typing import Any
 
 
 class WSHealthCheck:
@@ -7,18 +8,23 @@ class WSHealthCheck:
         """WSHealthCheckクラスの初期化"""
         self.app: Flask = Flask(__name__)
         self.first_message_received: bool = False
-        self.app.add_url_rule('/health', 'health_check', self.health_check)
+        self.app.add_url_rule(
+            '/health',
+            'health_check',
+            self.health_check,
+            methods=['GET']
+        )
 
-    def health_check(self) -> Response:
+    def health_check(self) -> Any:
         """ヘルスチェック用のエンドポイント
 
         Returns:
-            Response: ヘルスチェック結果
+            Any: ヘルスチェック結果
         """
         if self.first_message_received:
-            return jsonify(status="OK")
+            return jsonify(status="OK"), 200
         else:
-            return jsonify(status="Waiting for first message")
+            return jsonify(status="Waiting for first message"), 503
 
     def start_flask_app(self) -> None:
         """Flaskアプリを開始する"""
