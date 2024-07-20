@@ -1,7 +1,7 @@
 from typing import Tuple
 
-from .kinesis import Kinesis
+from .authorization import Authorization
 
 __all__: Tuple[str, ...] = (
-    "Kinesis",
+    "Authorization",
 )
