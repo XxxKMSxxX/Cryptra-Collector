@@ -10,7 +10,6 @@ class Bitflyer(Exchange):
 
     def __init__(self, contract: str, symbol: str) -> None:
         super().__init__(contract, symbol)
-        self._ticker: Dict = {}
 
     @property
     def public_ws_url(self) -> str:
@@ -44,13 +43,13 @@ class Bitflyer(Exchange):
             topic: str = msg['params']['channel']
             message: str = msg['params']['message']
             if topic.startswith('lightning_executions'):
-                self.wsqueue.put_nowait(self._on_trade(message))
+                self.trade.put_nowait(self._on_trade(message))
             elif topic.startswith('lightning_ticker'):
-                self.wsqueue.put_nowait(self._on_ticker(message))
+                pass
             elif topic.startswith('lightning_board_snapshot'):
-                self.wsqueue.put_nowait(self._on_orderbook_snapshot(message))
+                pass
             elif topic.startswith('lightning_board'):
-                self.wsqueue.put_nowait(self._on_orderbook(message))
+                pass
 
     def _on_trade(self, msg: Any) -> List:
         """
@@ -82,34 +81,34 @@ class Bitflyer(Exchange):
             }
         ]
         """
-        executions = []
-        for execution in msg:
-            exec_date = execution['exec_date']
-            # 'Z' を削除し、ミリ秒部分を6桁に切り捨てまたはパディング
+        trades = []
+        for trade in msg:
+            exec_date = trade['exec_date']
             exec_date = exec_date.rstrip('Z')
             if '.' in exec_date:
                 exec_date, microseconds = exec_date.split('.')
-                microseconds = microseconds[:6].ljust(6, '0')  # ミリ秒部分を6桁に調整
-                exec_date = f"{exec_date}.{microseconds}Z"
+                microseconds = microseconds[:6].ljust(6, '0')
+                exec_date = f"{exec_date}.{microseconds}"
             else:
-                exec_date = f"{exec_date}.000000Z"
-            dt = datetime.strptime(exec_date, '%Y-%m-%dT%H:%M:%S.%fZ')
-            unix_time = dt.timestamp()
-            executions.append({
-                'timestamp': unix_time,
-                'side': execution['side'],
-                'price': execution['price'],
-                'size': execution['size']
+                exec_date = f"{exec_date}.000000"
+            dt = datetime.strptime(exec_date, '%Y-%m-%dT%H:%M:%S.%f')
+            unix_time_ms = int(dt.timestamp() * 1000)
+            trades.append({
+                'timestamp': unix_time_ms,
+                'side': trade['side'],
+                'price': float(trade['price']),
+                'size': float(trade['size'])
             })
-        return executions
+        return trades
 
     def _on_ticker(self, msg: Any) -> List:
-        return [msg]
+        # TODO: tickeメッセージの処理を実装
+        return []
 
-    def _on_orderbook_snapshot(self, msg: Any) -> List[Dict[str, Any]]:
+    def _on_orderbook_snapshot(self, msg: Any) -> List:
         # TODO: Orderbook(snapshot)メッセージの処理を実装
         return []
 
-    def _on_orderbook(self, msg: Any) -> List[Dict[str, Any]]:
+    def _on_orderbook(self, msg: Any) -> List:
         # TODO: Orderbookメッセージの処理を実装
         return []

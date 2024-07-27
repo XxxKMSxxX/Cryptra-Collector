@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from argparse import ArgumentParser, Namespace
 from src.libs.exchange import load_exchange
-from src.libs.utils import Candle, LoggerManager
+from src.libs.utils import CandleGenerator, LoggerManager
 from typing import Any, Dict
 import asyncio
 import pybotters
@@ -12,44 +12,8 @@ logger_manager = LoggerManager(LoggerManager.INFO)
 logger = logger_manager.get_logger(__name__)
 
 
-async def producer(exchange) -> None:
-    """
-    WebSocket接続を確立し、メッセージをキューに追加
-
-    Args:
-        exchange: Exchangeオブジェクト
-    """
-    async with pybotters.Client() as client:
-        ws = await client.ws_connect(
-            url=exchange.public_ws_url,
-            send_json=exchange.subscribe_message,
-            hdlr_json=exchange.on_message,
-        )
-        await ws.wait()
-
-
-async def consumer(exchange, candle) -> None:
-    """
-    キューからメッセージを取得し、ローソク足を更新
-
-    Args:
-        exchange: Exchangeオブジェクト
-        candlestick_generator: Candleクラスのインスタンス
-    """
-    while True:
-        messages = await exchange.wsqueue.get()
-        if messages:
-            for execution in messages:
-                candle.update(
-                    execution['timestamp'],
-                    execution['side'],
-                    execution['price'],
-                    execution['size']
-                )
-
-
-def on_candle_close(candle: Dict[str, Any]) -> None:
-    print(candle, flush=True)
+async def on_candle_close(candle: Dict[str, Any]) -> None:
+    logger.info(candle)
 
 
 async def main(args: Namespace) -> None:
@@ -60,15 +24,23 @@ async def main(args: Namespace) -> None:
         args: コマンドライン引数
     """
     exchange = load_exchange(args)
-    candle = Candle(
-        interval_sec=1,
+    candle_generator = CandleGenerator(
+        logger=logger,
+        freq=1,
         on_candle_close=on_candle_close
     )
 
-    await asyncio.gather(
-        producer(exchange),
-        consumer(exchange, candle),
-    )
+    async with pybotters.Client() as client:
+        ws = await client.ws_connect(
+            url=exchange.public_ws_url,
+            send_json=exchange.subscribe_message,
+            hdlr_json=exchange.on_message,
+        )
+
+        await asyncio.gather(
+            ws.wait(),
+            candle_generator.start(exchange.trade),
+        )
 
 if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal.default_int_handler)

@@ -14,7 +14,7 @@ class Exchange(ABC):
         self._contract = contract
         self._symbol = symbol
         self._client = Client()
-        self.wsqueue = WebSocketQueue()
+        self.trade = WebSocketQueue()
 
     @property
     @abstractmethod

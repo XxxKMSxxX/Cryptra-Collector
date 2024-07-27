@@ -1,6 +1,22 @@
 import logging
 import logging.config
 from typing import Any, Optional
+from datetime import datetime, timedelta, timezone
+
+JST = timezone(timedelta(hours=9))
+
+
+class JSTFormatter(logging.Formatter):
+    """JSTで時間を表示するフォーマッタ"""
+
+    def formatTime(self, record, datefmt=None):
+        dt = datetime.fromtimestamp(record.created, JST)
+        if datefmt:
+            s = dt.strftime(datefmt)
+        else:
+            t = dt.strftime(self.default_time_format)
+            s = self.default_msec_format % (t, record.msecs)
+        return s
 
 
 class LoggerManager:
@@ -22,16 +38,14 @@ class LoggerManager:
 
     def setup_logging(self) -> None:
         """ロギングの設定を行う"""
-        logging.basicConfig(
-            level=self.level,
-            format=(
-                '%(asctime)s '
-                '%(levelname)s '
-                '[%(threadName)s] '
-                '%(module)s.%(funcName)s: '
-                '%(message)s'
-            )
+        handler = logging.StreamHandler()
+        handler.setLevel(self.level)
+        formatter = JSTFormatter(
+            '%(asctime)s %(levelname)s [%(threadName)s] %(module)s.%(funcName)s: %(message)s'
         )
+        handler.setFormatter(formatter)
+        logging.getLogger().handlers = [handler]
+        logging.getLogger().setLevel(self.level)
 
     def get_logger(self, name: str = '') -> logging.Logger:
         """指定した名前のロガーを取得する

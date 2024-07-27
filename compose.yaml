@@ -31,15 +31,15 @@ x-fx: &fx
   CONTRACT: fx
 
 services:
-  # # Bybit Spot
-  # bybit-spot-btcusdt:
-  #   <<: *collector
-  #   container_name: bybit-spot-btcusdt
-  #   ports:
-  #     - 8080:8080
-  #   environment:
-  #     <<: [*bybit, *spot]
-  #     SYMBOL: BTCUSDT
+  # Bybit Spot
+  bybit-spot-btcusdt:
+    <<: *collector
+    container_name: bybit-spot-btcusdt
+    ports:
+      - 8080:8080
+    environment:
+      <<: [*bybit, *spot]
+      SYMBOL: BTCUSDT
 
   # bybit-spot-ethusdt:
   #   <<: *collector
@@ -115,15 +115,15 @@ services:
   #     <<: [*bybit, *inverse]
   #     SYMBOL: SOLUSD
 
-  # # Binance Spot
-  # binance-spot-btcusdt:
-  #   <<: *collector
-  #   container_name: binance-spot-btcusdt
-  #   ports:
-  #     - 8089:8080
-  #   environment:
-  #     <<: [*binance, *spot]
-  #     SYMBOL: btcusdt
+  # Binance Spot
+  binance-spot-btcusdt:
+    <<: *collector
+    container_name: binance-spot-btcusdt
+    ports:
+      - 8089:8080
+    environment:
+      <<: [*binance, *spot]
+      SYMBOL: btcusdt
 
   # binance-spot-btcjpy:
   #   <<: *collector

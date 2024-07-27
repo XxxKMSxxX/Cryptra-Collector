@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from ..exchange import Exchange
+from pybotters.ws import ClientWebSocketResponse
 from typing import List, Dict, Any
 
 
@@ -8,7 +9,6 @@ class Binance(Exchange):
 
     def __init__(self, contract: str, symbol: str) -> None:
         super().__init__(contract, symbol)
-        self._ticker: Dict = {}
 
     @property
     def public_ws_url(self) -> str:
@@ -37,7 +37,7 @@ class Binance(Exchange):
             "id": 1
         }
 
-    def on_message(self, msg: Any) -> Dict[str, Any]:
+    def on_message(self, msg: Any, ws: ClientWebSocketResponse) -> None:
         """WebSocket API > Market data requests
         - https://binance-docs.github.io/apidocs/websocket_api/en/#recent-trades  # noqa: E501
         - https://binance-docs.github.io/apidocs/websocket_api/en/#24hr-ticker-price-change-statistics  # noqa: E501
@@ -45,24 +45,39 @@ class Binance(Exchange):
         if 'stream' in msg:
             topic: str = msg['stream']
             if topic.endswith('@trade'):
-                return self.handle_message_with_hash(
-                    self._on_trade(msg['data'])
-                )
+                self.trade.put_nowait(self._on_trade(msg))
             elif topic.endswith('@ticker'):
-                return self.handle_message_with_hash(
-                    self._on_ticker(msg['data'])
-                )
+                pass
             elif topic.endswith('@depth'):
-                return self.handle_message_with_hash(
-                    self._on_ticker(msg['data'])
-                )
-        return {}
+                pass
 
     def _on_trade(self, msg: Any) -> List:
-        return [msg]
+        """
+        {
+            'stream': 'btcusdt@trade',
+            'data': {
+                'e': 'trade',
+                'E': 1721554806084,
+                's': 'BTCUSDT',
+                't': 3694595677,
+                'p': '66913.25000000',
+                'q': '0.00011000',
+                'T': 1721554806083,
+                'm': True,
+                'M': True
+            }
+        }
+        """
+        return [{
+            'timestamp': int(msg['data']['T']),
+            'side': 'BUY' if msg['data']['m'] else 'SELL',
+            'price': float(msg['data']['p']),
+            'size': float(msg['data']['p'])
+        }]
 
     def _on_ticker(self, msg: Any) -> List:
-        return [msg]
+        # TODO: tickeメッセージの処理を実装
+        return []
 
     def _on_orderbook(self, msg: Any) -> List[Dict[str, Any]]:
         # TODO: Orderbookメッセージの処理を実装

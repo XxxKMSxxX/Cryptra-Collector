@@ -1,10 +1,10 @@
 from typing import Tuple
 
-from .candle import Candle
+from .candle_generator import CandleGenerator
 from .logger import LoggerManager
 from .ws_health_check import WSHealthCheck
 __all__: Tuple[str, ...] = (
-    "Candle",
+    "CandleGenerator",
     "LoggerManager",
     "WSHealthCheck",
 )
