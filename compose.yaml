@@ -5,15 +5,12 @@ x-collector: &collector
 
 x-bybit: &bybit
   EXCHANGE: bybit
-  AWS_REGION: ap-southeast-1
 
 x-binance: &binance
   EXCHANGE: binance
-  AWS_REGION: ap-northeast-1
 
 x-bitflyer: &bitflyer
   EXCHANGE: bitflyer
-  AWS_REGION: ap-northeast-1
 
 x-spot: &spot
   CONTRACT: spot
