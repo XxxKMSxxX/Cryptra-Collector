@@ -11,7 +11,8 @@ pybotters = "^1.3.0"
 boto3 = "^1.34.144"
 aiohttp = "^3.9.5"
 flask = "^3.0.3"
-
+numpy = "^2.0.1"
+rich = "^13.7.1"
 
 [build-system]
 requires = ["poetry-core"]
