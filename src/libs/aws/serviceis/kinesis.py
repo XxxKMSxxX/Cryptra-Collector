@@ -45,7 +45,7 @@ class Kinesis(AwsClient):
         async for record in self._queue_in:
             record.update(tags)
             try:
-                response = self.client.put_record(
+                response = self._client.put_record(
                     StreamName=stream_name,
                     Data=record,
                     PartitionKey="default"
