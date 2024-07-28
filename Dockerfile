@@ -34,4 +34,4 @@ COPY src/ ./src
 EXPOSE 8080
 
 # コンテナ起動時のデフォルトコマンドを設定
-CMD ["sh", "-c", "python -Bum collector ${EXCHANGE} ${CONTRACT} ${SYMBOL} ${AWS_REGION}"]
+CMD ["sh", "-c", "python -Bum collector ${EXCHANGE} ${CONTRACT} ${SYMBOL}"]

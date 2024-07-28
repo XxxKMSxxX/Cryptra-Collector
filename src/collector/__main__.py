@@ -1,69 +1,69 @@
 from __future__ import annotations
 
-from aiohttp import ClientWebSocketResponse
-from argparse import ArgumentParser, Namespace
-from src.libs.aws import Kinesis
-from src.libs.exchange import load_exchange
-from src.libs.utils import LoggerManager, WSHealthCheck
-from typing import Any
 import asyncio
-import pybotters
-import signal
+from argparse import ArgumentParser, Namespace
 
-logger_manager = LoggerManager(LoggerManager.INFO)
-logger = logger_manager.get_logger(__name__)
+from pybotters import WebSocketQueue
+
+from src.libs.aws.serviceis import Kinesis
+from src.libs.exchange import load_exchange
+from src.libs.utils import Candle, HealthCheck, LogManager, trace
 
 
+@trace
 async def main(args: Namespace) -> None:
-    health_check = WSHealthCheck()
-    health_check.run()
+    """
+    メイン関数
 
-    exchange = load_exchange(args)
-    kinesis = Kinesis(args.aws_region)
-    KINESIS_STREAM_NAME = (
-        f"{args.exchange}-{args.contract}-{args.symbol.upper()}"
-    )
+    Args:
+        args: コマンドライン引数
+    """
+    stream_name = "cryptra-collector"
+    tags = {
+        "exchange": args.exchange.lower(),
+        "contract": args.contract.lower(),
+        "symbol": args.symbol.lower()
+    }
 
-    def handler(msg: Any, ws: ClientWebSocketResponse) -> None:
-        if not health_check.first_message_received:
-            health_check.set_first_message_received(True)
-        message = exchange.on_message(msg)
-        if message:
-            asyncio.create_task(
-                kinesis.publish(KINESIS_STREAM_NAME, message)
-            )
-            logger_manager.info(message)
+    is_healthy = False
+    trade_queue = WebSocketQueue()
+    candlestick_queue = WebSocketQueue()
 
-    async with pybotters.Client() as client:
-        ws = await client.ws_connect(
-            url=exchange.public_ws_url,
-            send_json=exchange.subscribe_message,
-            hdlr_json=handler,
-        )
-        await ws.wait()
+    exchange = load_exchange(args, trade_queue)
+    candle = Candle(trade_queue, candlestick_queue, args.frequency)
+    kinesis = Kinesis(candlestick_queue, is_healthy)
+    health_check = HealthCheck(is_healthy)
+
+    tasks = [
+        exchange.subscribe(),
+        candle.generate(),
+        kinesis.publish(stream_name, tags),
+        health_check.start(),
+    ]
+
+    await asyncio.gather(*(asyncio.create_task(task) for task in tasks))
+
 
 if __name__ == "__main__":
-    signal.signal(signal.SIGINT, signal.default_int_handler)
-    signal.signal(signal.SIGTERM, signal.default_int_handler)
-
     try:
         parser = ArgumentParser()
-        parser.add_argument('exchange', type=str, help='取引所の名前')
-        parser.add_argument('contract', type=str, help='契約の種類')
-        parser.add_argument('symbol', type=str, help='取引シンボル')
-        parser.add_argument('aws_region', type=str, help='AWSリージョン')
-        parser.add_argument('--log_level', type=str, default='INFO', choices=[
-            'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'
-        ], help='ログレベル')
+        parser.add_argument("exchange", type=str)
+        parser.add_argument("contract", type=str)
+        parser.add_argument("symbol", type=str)
+        parser.add_argument("frequency", type=int, default=1)
+        parser.add_argument(
+            "--log_level",
+            type=str,
+            default="INFO",
+            choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+        )
         args: Namespace = parser.parse_args()
-
-        log_level = getattr(LoggerManager, args.log_level)
-        logger_manager = LoggerManager(log_level)
-        logger = logger_manager.get_logger(__name__)
+        log_manager = LogManager(args.log_level.upper())
+        logger = log_manager.get_logger(__name__)
 
         logger.info(f"Starting with args: {args}")
         asyncio.run(main(args))
     except KeyboardInterrupt:
-        logger_manager.warning("KeyboardInterrupt detected, exiting.")
+        logger.warning("KeyboardInterrupt detected, exiting.")
     except Exception:
-        logger_manager.error("Exception occurred", exc_info=True)
+        logger.error("Exception occurred", exc_info=True)
