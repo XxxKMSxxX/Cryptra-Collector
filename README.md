@@ -1,4 +1,4 @@
-# crypt-data-collector
+# Cryptra-Collector
 
 [![CI](https://github.com/XxxKMSxxX/Cryptra-Collector/actions/workflows/ci.yml/badge.svg)](https://github.com/XxxKMSxxX/Cryptra-Collector/actions/workflows/ci.yml)
 [![CD](https://github.com/XxxKMSxxX/Cryptra-Collector/actions/workflows/cd.yml/badge.svg)](https://github.com/XxxKMSxxX/Cryptra-Collector/actions/workflows/cd.yml)
