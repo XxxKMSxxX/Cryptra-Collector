@@ -1,15 +1,20 @@
 from __future__ import annotations
 
-from ..exchange import Exchange
 from datetime import datetime
+from typing import Any, Dict, List
+
+from pybotters import WebSocketQueue
 from pybotters.ws import ClientWebSocketResponse
-from typing import List, Dict, Any
+
+from src.libs.utils import add_logging
+
+from ..exchange import Exchange
 
 
+@add_logging
 class Bitflyer(Exchange):
-
-    def __init__(self, contract: str, symbol: str) -> None:
-        super().__init__(contract, symbol)
+    def __init__(self, contract: str, symbol: str, queue_out: WebSocketQueue) -> None:
+        super().__init__(contract, symbol, queue_out)
 
     @property
     def public_ws_url(self) -> str:
@@ -39,17 +44,17 @@ class Bitflyer(Exchange):
         ]
 
     def on_message(self, msg: Any, ws: ClientWebSocketResponse) -> None:
-        if 'params' in msg:
-            topic: str = msg['params']['channel']
-            message: str = msg['params']['message']
-            if topic.startswith('lightning_executions'):
-                self.trade.put_nowait(self._on_trade(message))
-            elif topic.startswith('lightning_ticker'):
-                pass
-            elif topic.startswith('lightning_board_snapshot'):
-                pass
-            elif topic.startswith('lightning_board'):
-                pass
+        if "params" in msg:
+            topic: str = msg["params"]["channel"]
+            message: str = msg["params"]["message"]
+            if topic.startswith("lightning_executions"):
+                self.queue_out.put_nowait(self._on_trade(message))
+            elif topic.startswith("lightning_ticker"):
+                self.queue_out.put_nowait(self._on_ticker(message))
+            elif topic.startswith("lightning_board_snapshot"):
+                self.queue_out.put_nowait(self._on_orderbook_snapshot(message))
+            elif topic.startswith("lightning_board"):
+                self.queue_out.put_nowait(self._on_orderbook(message))
 
     def _on_trade(self, msg: Any) -> List:
         """
@@ -83,22 +88,24 @@ class Bitflyer(Exchange):
         """
         trades = []
         for trade in msg:
-            exec_date = trade['exec_date']
-            exec_date = exec_date.rstrip('Z')
-            if '.' in exec_date:
-                exec_date, microseconds = exec_date.split('.')
-                microseconds = microseconds[:6].ljust(6, '0')
+            exec_date = trade["exec_date"]
+            exec_date = exec_date.rstrip("Z")
+            if "." in exec_date:
+                exec_date, microseconds = exec_date.split(".")
+                microseconds = microseconds[:6].ljust(6, "0")
                 exec_date = f"{exec_date}.{microseconds}"
             else:
                 exec_date = f"{exec_date}.000000"
-            dt = datetime.strptime(exec_date, '%Y-%m-%dT%H:%M:%S.%f')
+            dt = datetime.strptime(exec_date, "%Y-%m-%dT%H:%M:%S.%f")
             unix_time_ms = int(dt.timestamp() * 1000)
-            trades.append({
-                'timestamp': unix_time_ms,
-                'side': trade['side'],
-                'price': float(trade['price']),
-                'size': float(trade['size'])
-            })
+            trades.append(
+                {
+                    "timestamp": unix_time_ms,
+                    "side": trade["side"],
+                    "price": float(trade["price"]),
+                    "size": float(trade["size"]),
+                }
+            )
         return trades
 
     def _on_ticker(self, msg: Any) -> List:

@@ -1,8 +1,11 @@
 import os
+
 import boto3
 
+from src.libs.utils import LogManager
 
-class Authorization:
+
+class AwsClient:
     def __init__(self, session_name: str):
         """
         Credentialsクラスのコンストラクタ
@@ -21,8 +24,11 @@ class Authorization:
         Raises:
             EnvironmentError: 環境変数の取得に失敗した場合
         """
-        self._aws_role_arn = os.getenv('AWS_ROLE_ARN')
-        self._aws_region = os.getenv('AWS_REGION')
+        self._aws_role_arn = os.getenv("AWS_ROLE_ARN")
+        self._aws_region = os.getenv("AWS_REGION")
+        LogManager.add_masked_credentials(
+            {"AWS_ROLE_ARN": self._aws_role_arn, "AWS_REGION": self._aws_region}
+        )
 
         if not self._aws_role_arn or not self._aws_region:
             raise EnvironmentError(
@@ -36,12 +42,11 @@ class Authorization:
         Returns:
             dict: 一時的なセキュリティ認証情報
         """
-        sts_client = boto3.client('sts')
+        sts_client = boto3.client("sts")
         assumed_role = sts_client.assume_role(
-            RoleArn=self._aws_role_arn,
-            RoleSessionName=self._session_name
+            RoleArn=self._aws_role_arn, RoleSessionName=self._session_name
         )
-        return assumed_role['Credentials']
+        return assumed_role["Credentials"]
 
     def get_boto3_client(self, service_name: str):
         """
@@ -56,7 +61,7 @@ class Authorization:
         return boto3.client(
             service_name,
             region_name=self._aws_region,
-            aws_access_key_id=self._credentials['AccessKeyId'],
-            aws_secret_access_key=self._credentials['SecretAccessKey'],
-            aws_session_token=self._credentials['SessionToken']
+            aws_access_key_id=self._credentials["AccessKeyId"],
+            aws_secret_access_key=self._credentials["SecretAccessKey"],
+            aws_session_token=self._credentials["SessionToken"],
         )

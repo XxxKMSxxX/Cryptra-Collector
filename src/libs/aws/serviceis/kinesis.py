@@ -2,10 +2,11 @@ from __future__ import annotations
 
 from json import dumps
 from typing import Dict, List
-from authorization.aws_authorization import Authorization
-import boto3
 
-class Kinesis(Authorization):
+from ..aws_client import AwsClient
+
+
+class Kinesis(AwsClient):
     def __init__(self, session_name: str):
         """
         Kinesisクラスのコンストラクタ
@@ -14,7 +15,7 @@ class Kinesis(Authorization):
             session_name (str): セッション名
         """
         super().__init__(session_name)
-        self._kinesis_client = self.get_boto3_client('kinesis')
+        self._kinesis_client = self.get_boto3_client("kinesis")
 
     def publish(self, stream_name: str, record: Dict) -> dict:
         """
@@ -28,12 +29,12 @@ class Kinesis(Authorization):
             dict: Kinesisに送信した結果
         """
         return self._kinesis_client.put_record(
-            StreamName=stream_name,
-            Data=dumps(record),
-            PartitionKey='partition_key'
+            StreamName=stream_name, Data=dumps(record), PartitionKey="partition_key"
         )
 
-    def get_shard_iterator(self, stream_name: str, shard_id: str, iterator_type: str = 'LATEST') -> str:
+    def get_shard_iterator(
+        self, stream_name: str, shard_id: str, iterator_type: str = "LATEST"
+    ) -> str:
         """
         Shard Iteratorを取得する
 
@@ -46,11 +47,9 @@ class Kinesis(Authorization):
             str: Shard Iterator
         """
         response = self._kinesis_client.get_shard_iterator(
-            StreamName=stream_name,
-            ShardId=shard_id,
-            ShardIteratorType=iterator_type
+            StreamName=stream_name, ShardId=shard_id, ShardIteratorType=iterator_type
         )
-        return response['ShardIterator']
+        return response["ShardIterator"]
 
     def get_records(self, shard_iterator: str, limit: int = 10) -> List[Dict]:
         """
@@ -64,16 +63,16 @@ class Kinesis(Authorization):
             List[Dict]: 取得したレコード
         """
         response = self._kinesis_client.get_records(
-            ShardIterator=shard_iterator,
-            Limit=limit
+            ShardIterator=shard_iterator, Limit=limit
         )
-        return response['Records']
+        return response["Records"]
 
     def subscribe(
-        self, stream_name: str,
+        self,
+        stream_name: str,
         shard_id: str,
-        iterator_type: str = 'LATEST',
-        limit: int = 10
+        iterator_type: str = "LATEST",
+        limit: int = 10,
     ) -> List[Dict]:
         """
         Kinesisストリームを購読し、データを取得する

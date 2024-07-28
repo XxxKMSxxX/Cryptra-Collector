@@ -1,14 +1,19 @@
 from __future__ import annotations
 
-from ..exchange import Exchange
+from typing import Any, Dict, List
+
+from pybotters import WebSocketQueue
 from pybotters.ws import ClientWebSocketResponse
-from typing import List, Dict, Any
+
+from src.libs.utils import add_logging
+
+from ..exchange import Exchange
 
 
+@add_logging
 class Bybit(Exchange):
-
-    def __init__(self, contract: str, symbol: str) -> None:
-        super().__init__(contract, symbol)
+    def __init__(self, contract: str, symbol: str, queue_out: WebSocketQueue) -> None:
+        super().__init__(contract, symbol, queue_out)
 
     @property
     def public_ws_url(self) -> str:
@@ -28,7 +33,7 @@ class Bybit(Exchange):
                 # f"tickers.{symbol_upper}",
                 # f"orderbook.50.{symbol_upper}",
                 # f"liquidation.{symbol_upper}",
-            ]
+            ],
         }
 
     def on_message(self, msg: Any, ws: ClientWebSocketResponse) -> None:
@@ -37,16 +42,17 @@ class Bybit(Exchange):
         - https://bybit-exchange.github.io/docs/v5/websocket/public/ticker
         - https://bybit-exchange.github.io/docs/v5/websocket/public/liquidation
         """
-        if 'topic' in msg:
-            topic: str = msg['topic']
-            if topic.startswith('publicTrade'):
-                self.trade.put_nowait(self._on_trade(msg))
-            elif topic.startswith('tickers'):
-                pass
-            elif topic.startswith('orderbook'):
-                pass
-            elif topic.startswith('liquidation'):
-                pass
+        if "topic" in msg:
+            topic: str = msg["topic"]
+            if topic.startswith("publicTrade"):
+                self.queue_out.put_nowait(self._on_trade(msg))
+            elif topic.startswith("tickers"):
+                self.queue_out.put_nowait(self._on_ticker(msg))
+            elif topic.startswith("orderbook"):
+                self.queue_out.put_nowait(self._on_orderbook(msg))
+            elif topic.startswith("liquidation"):
+                self.queue_out.put_nowait(self._on_orderbook(msg))
+        return {}
 
     def _on_trade(self, msg: Any) -> List:
         """
@@ -69,18 +75,24 @@ class Bybit(Exchange):
         }
         """
         trades = []
-        for trade in msg['data']:
-            trades.append({
-                'timestamp': int(trade['T']),
-                'side': trade['S'],
-                'price': float(trade['p']),
-                'size': float(trade['v'])
-            })
+        for trade in msg["data"]:
+            trades.append(
+                {
+                    "timestamp": trade["T"],
+                    "side": trade["S"],
+                    "price": float(trade["p"]),
+                    "size": float(trade["v"]),
+                }
+            )
         return trades
 
     def _on_ticker(self, msg: Any) -> List:
-        # TODO: tickeメッセージの処理を実装
-        return []
+        type: str = msg["type"]
+        if type == "delta":
+            self._ticker.update(msg["data"])
+        elif type == "snapshot":
+            self._ticker = msg["data"]
+        return [self._ticker]
 
     def _on_orderbook(self, msg: Any) -> List:
         # TODO: Orderbookメッセージの処理を実装

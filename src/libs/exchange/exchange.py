@@ -1,20 +1,23 @@
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
-from aiohttp import ClientWebSocketResponse
-from argparse import Namespace
-from pybotters import Client, WebSocketQueue
-from typing import List, Dict, Any
 import importlib
+from abc import ABC, abstractmethod
+from argparse import Namespace
+from typing import Any, Dict, List
+
+from aiohttp import ClientWebSocketResponse
+from pybotters import Client, WebSocketQueue
+
+from src.libs.utils import add_logging, trace
 
 
+@add_logging
 class Exchange(ABC):
-
-    def __init__(self, contract: str, symbol: str) -> None:
+    def __init__(self, contract: str, symbol: str, queue_out: WebSocketQueue) -> None:
         self._contract = contract
         self._symbol = symbol
         self._client = Client()
-        self.trade = WebSocketQueue()
+        self.queue_out = queue_out
 
     @property
     @abstractmethod
@@ -47,8 +50,17 @@ class Exchange(ABC):
     def _on_orderbook(self, msg: Any) -> List:
         raise NotImplementedError
 
+    async def subscribe(self) -> None:
+        self._ws = await self._client.ws_connect(
+            url=self.public_ws_url,
+            send_json=self.subscribe_message,
+            hdlr_json=self.on_message,
+        )
+        await self._ws.wait()
 
-def load_exchange(args: Namespace) -> Exchange:
+
+@trace
+def load_exchange(args: Namespace, wsqueue: WebSocketQueue) -> Exchange:
     """指定された取引所のモジュールとクラスを動的にロードし、インスタンスを返却
 
     Args:
@@ -68,10 +80,7 @@ def load_exchange(args: Namespace) -> Exchange:
         exchange_module = importlib.import_module(
             f"src.libs.exchange.models.{args.exchange.lower()}"
         )
-        exchange_class = getattr(
-            exchange_module,
-            f"{args.exchange.capitalize()}"
-        )
-        return exchange_class(args.contract, args.symbol)
+        exchange_class = getattr(exchange_module, f"{args.exchange.capitalize()}")
+        return exchange_class(args.contract, args.symbol, wsqueue)
     except Exception:
         raise

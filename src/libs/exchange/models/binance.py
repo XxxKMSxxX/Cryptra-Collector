@@ -1,14 +1,19 @@
 from __future__ import annotations
 
-from ..exchange import Exchange
+from typing import Any, Dict, List
+
+from pybotters import WebSocketQueue
 from pybotters.ws import ClientWebSocketResponse
-from typing import List, Dict, Any
+
+from src.libs.utils import add_logging
+
+from ..exchange import Exchange
 
 
+@add_logging
 class Binance(Exchange):
-
-    def __init__(self, contract: str, symbol: str) -> None:
-        super().__init__(contract, symbol)
+    def __init__(self, contract: str, symbol: str, queue_out: WebSocketQueue) -> None:
+        super().__init__(contract, symbol, queue_out)
 
     @property
     def public_ws_url(self) -> str:
@@ -34,7 +39,7 @@ class Binance(Exchange):
                 # f"{symbol_lower}@ticker",
                 # f"{symbol_lower}@depth",
             ],
-            "id": 1
+            "id": 1,
         }
 
     def on_message(self, msg: Any, ws: ClientWebSocketResponse) -> None:
@@ -42,14 +47,15 @@ class Binance(Exchange):
         - https://binance-docs.github.io/apidocs/websocket_api/en/#recent-trades  # noqa: E501
         - https://binance-docs.github.io/apidocs/websocket_api/en/#24hr-ticker-price-change-statistics  # noqa: E501
         """
-        if 'stream' in msg:
-            topic: str = msg['stream']
-            if topic.endswith('@trade'):
-                self.trade.put_nowait(self._on_trade(msg))
-            elif topic.endswith('@ticker'):
-                pass
-            elif topic.endswith('@depth'):
-                pass
+        if "stream" in msg:
+            topic: str = msg["stream"]
+            if topic.endswith("@trade"):
+                self.queue_out.put_nowait(self._on_trade(msg["data"]))
+            elif topic.endswith("@ticker"):
+                self.queue_out.put_nowait(self._on_ticker(msg["data"]))
+            elif topic.endswith("@depth"):
+                self.queue_out.put_nowait(self._on_ticker(msg["data"]))
+        return {}
 
     def _on_trade(self, msg: Any) -> List:
         """
@@ -68,12 +74,14 @@ class Binance(Exchange):
             }
         }
         """
-        return [{
-            'timestamp': int(msg['data']['T']),
-            'side': 'BUY' if msg['data']['m'] else 'SELL',
-            'price': float(msg['data']['p']),
-            'size': float(msg['data']['p'])
-        }]
+        return [
+            {
+                "timestamp": int(msg["T"]),
+                "side": "BUY" if msg["m"] else "SELL",
+                "price": float(msg["p"]),
+                "size": float(msg["p"]),
+            }
+        ]
 
     def _on_ticker(self, msg: Any) -> List:
         # TODO: tickeメッセージの処理を実装

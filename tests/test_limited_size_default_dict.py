@@ -1,7 +1,9 @@
-import pytest
-from src.libs.utils.limited_size_default_dict import LimitedSizeDefaultDict
 from datetime import datetime
-from typing import Dict, Any
+from typing import Any, Dict
+
+import pytest
+
+from src.libs.utils.limited_size_default_dict import LimitedSizeDefaultDict
 
 
 @pytest.fixture
@@ -9,8 +11,8 @@ def limited_size_default_dict() -> LimitedSizeDefaultDict:
     def factory() -> Dict[str, Any]:
         return {
             "open": None,
-            "high": float('-inf'),
-            "low": float('inf'),
+            "high": float("-inf"),
+            "low": float("inf"),
             "close": None,
             "volume": 0.0,
             "buy_volume": 0.0,

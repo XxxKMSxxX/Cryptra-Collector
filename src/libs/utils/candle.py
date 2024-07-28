@@ -1,28 +1,35 @@
-from datetime import datetime, timedelta, timezone
-from typing import List, Dict, Any, Callable, Awaitable
 import asyncio
-from logging import Logger
+from datetime import datetime, timedelta, timezone
+from typing import Any, Dict, List
+
+from pybotters import WebSocketQueue
+
 from src.libs.utils.limited_size_default_dict import LimitedSizeDefaultDict
+from src.libs.utils.logger import LogManager, add_logging
 
 JST = timezone(timedelta(hours=9))
 
 
-class CandleGenerator:
+@add_logging
+class Candle:
     def __init__(
         self,
-        logger: Logger,
-        freq: int,
-        on_candle_close: Callable[[Dict[str, Any]], Awaitable[None]],
-        max_candles: int = 100
+        queue_in: WebSocketQueue,
+        queue_out: WebSocketQueue,
+        freq: int = 1,
+        max_candles: int = 100,
     ):
-        self._logger = logger
+        self._logger = LogManager.get_logger(__name__)
+
+        self.queue_in = queue_in
+        self.queue_out = queue_out
         self._freq = freq
         self._candles: Dict[datetime, Dict[str, Any]] = LimitedSizeDefaultDict(
             lambda: {
                 "timestamp": None,
                 "open": None,
-                "high": float('-inf'),
-                "low": float('inf'),
+                "high": float("-inf"),
+                "low": float("inf"),
                 "close": None,
                 "volume": 0.0,
                 "buy_volume": 0.0,
@@ -34,18 +41,17 @@ class CandleGenerator:
                 "buy_value": 0.0,
                 "sell_value": 0.0,
             },
-            max_candles
+            max_candles,
         )
-        self._on_candle_close = on_candle_close
         self._current_key = None
         self._last_key = None
         self._delay_seconds = 0.0
 
-    async def start(self, trade):
+    async def generate(self):
         while True:
             messages = []
             try:
-                messages = trade.get_nowait()
+                messages = self.queue_in.get_nowait()
             except asyncio.QueueEmpty:
                 await asyncio.sleep(0.001)  # CPUを使い果たさないように少し待つ
                 pass
@@ -66,7 +72,7 @@ class CandleGenerator:
     def _update_candle(self, trades: List[Dict[str, Any]]) -> None:
         for trade in trades:
             timestamp_dt = datetime.fromtimestamp(
-                trade['timestamp'] / 1000.0, timezone.utc
+                trade["timestamp"] / 1000.0, timezone.utc
             )
 
             key = self._get_candle_key(timestamp_dt)
@@ -78,33 +84,31 @@ class CandleGenerator:
             if self._current_key is None:
                 self._current_key = key
             elif self._current_key > key:
-                self._logger.warn(
-                    f"確定済みローソク足の約定を受信: delay - {delay}"
-                )
+                self._logger.warn(f"確定済みローソク足の約定を受信: delay - {delay}")
 
             candle = self._candles[key]
 
-            if candle['timestamp'] is None:
-                candle['timestamp'] = key.astimezone(JST).isoformat()
-                candle['open'] = trade['price']
+            if candle["timestamp"] is None:
+                candle["timestamp"] = key.astimezone(JST).isoformat()
+                candle["open"] = trade["price"]
 
-            candle['high'] = max(candle['high'], trade['price'])
-            candle['low'] = min(candle['low'], trade['price'])
-            candle['close'] = trade['price']
+            candle["high"] = max(candle["high"], trade["price"])
+            candle["low"] = min(candle["low"], trade["price"])
+            candle["close"] = trade["price"]
 
-            candle['volume'] += trade['size']
-            candle['count'] += 1
-            candle['value'] += trade['price'] * trade['size']
+            candle["volume"] += trade["size"]
+            candle["count"] += 1
+            candle["value"] += trade["price"] * trade["size"]
 
-            side_upper = trade['side'].upper()
-            if side_upper == 'BUY':
-                candle['buy_volume'] += trade['size']
-                candle['buy_count'] += 1
-                candle['buy_value'] += trade['price'] * trade['size']
-            elif side_upper == 'SELL':
-                candle['sell_volume'] += trade['size']
-                candle['sell_count'] += 1
-                candle['sell_value'] += trade['price'] * trade['size']
+            side_upper = trade["side"].upper()
+            if side_upper == "BUY":
+                candle["buy_volume"] += trade["size"]
+                candle["buy_count"] += 1
+                candle["buy_value"] += trade["price"] * trade["size"]
+            elif side_upper == "SELL":
+                candle["sell_volume"] += trade["size"]
+                candle["sell_count"] += 1
+                candle["sell_value"] += trade["price"] * trade["size"]
 
     def _is_reached_time_at_finalize(self) -> bool:
         if self._current_key is None:
@@ -123,22 +127,17 @@ class CandleGenerator:
             return
 
         current_candle = self._candles[self._current_key]
-        if current_candle['timestamp'] is None:
-            current_candle['timestamp'] = (
-                self._current_key.astimezone(JST).isoformat()
-            )
+        if current_candle["timestamp"] is None:
+            current_candle["timestamp"] = self._current_key.astimezone(JST).isoformat()
 
             if self._last_key:
-                last_close = self._candles[self._last_key]['close']
-                current_candle['open'] = last_close
-                current_candle['high'] = last_close
-                current_candle['low'] = last_close
-                current_candle['close'] = last_close
+                last_close = self._candles[self._last_key]["close"]
+                current_candle["open"] = last_close
+                current_candle["high"] = last_close
+                current_candle["low"] = last_close
+                current_candle["close"] = last_close
 
-        # 非同期でコールバック
-        asyncio.create_task(
-            self._on_candle_close(current_candle)
-        )
+        self.queue_out.put_nowait(current_candle)
 
         self._last_key = self._current_key
         self._current_key += timedelta(seconds=self._freq)

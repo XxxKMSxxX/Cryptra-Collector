@@ -1,21 +1,15 @@
 from __future__ import annotations
 
-from argparse import ArgumentParser, Namespace
-from src.libs.exchange import load_exchange
-from src.libs.utils import CandleGenerator, LoggerManager
-from typing import Any, Dict
 import asyncio
-import pybotters
-import signal
+from argparse import ArgumentParser, Namespace
 
-logger_manager = LoggerManager(LoggerManager.INFO)
-logger = logger_manager.get_logger(__name__)
+from pybotters import WebSocketQueue
 
-
-async def on_candle_close(candle: Dict[str, Any]) -> None:
-    logger.info(candle)
+from src.libs.exchange import load_exchange
+from src.libs.utils import Candle, Display, LogManager, trace
 
 
+@trace
 async def main(args: Namespace) -> None:
     """
     メイン関数
@@ -23,46 +17,41 @@ async def main(args: Namespace) -> None:
     Args:
         args: コマンドライン引数
     """
-    exchange = load_exchange(args)
-    candle_generator = CandleGenerator(
-        logger=logger,
-        freq=1,
-        on_candle_close=on_candle_close
-    )
+    trade_queue = WebSocketQueue()
+    candlestick_queue = WebSocketQueue()
 
-    async with pybotters.Client() as client:
-        ws = await client.ws_connect(
-            url=exchange.public_ws_url,
-            send_json=exchange.subscribe_message,
-            hdlr_json=exchange.on_message,
-        )
+    exchange = load_exchange(args, trade_queue)
+    candle = Candle(trade_queue, candlestick_queue)
+    display = Display(candlestick_queue)
 
-        await asyncio.gather(
-            ws.wait(),
-            candle_generator.start(exchange.trade),
-        )
+    tasks = [
+        exchange.subscribe(),
+        candle.generate(),
+        display.run(),
+    ]
+
+    await asyncio.gather(*(asyncio.create_task(task) for task in tasks))
+
 
 if __name__ == "__main__":
-    signal.signal(signal.SIGINT, signal.default_int_handler)
-    signal.signal(signal.SIGTERM, signal.default_int_handler)
-
     try:
         parser = ArgumentParser()
-        parser.add_argument('exchange', type=str)
-        parser.add_argument('contract', type=str)
-        parser.add_argument('symbol', type=str)
-        parser.add_argument('--log_level', type=str, default='INFO', choices=[
-            'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'
-        ])
+        parser.add_argument("exchange", type=str)
+        parser.add_argument("contract", type=str)
+        parser.add_argument("symbol", type=str)
+        parser.add_argument(
+            "--log_level",
+            type=str,
+            default="WARNING",
+            choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+        )
         args: Namespace = parser.parse_args()
-
-        log_level = getattr(LoggerManager, args.log_level)
-        logger_manager = LoggerManager(log_level)
-        logger = logger_manager.get_logger(__name__)
+        log_manager = LogManager(args.log_level.upper())
+        logger = log_manager.get_logger(__name__)
 
         logger.info(f"Starting with args: {args}")
         asyncio.run(main(args))
     except KeyboardInterrupt:
-        logger_manager.warning("KeyboardInterrupt detected, exiting.")
+        logger.warning("KeyboardInterrupt detected, exiting.")
     except Exception:
-        logger_manager.error("Exception occurred", exc_info=True)
+        logger.error("Exception occurred", exc_info=True)

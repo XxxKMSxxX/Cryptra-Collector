@@ -1,6 +1,7 @@
-from flask import Flask, jsonify
 from threading import Thread
 from typing import Any
+
+from flask import Flask, jsonify
 
 
 class WSHealthCheck:
@@ -9,10 +10,7 @@ class WSHealthCheck:
         self.app: Flask = Flask(__name__)
         self.first_message_received: bool = False
         self.app.add_url_rule(
-            '/health',
-            'health_check',
-            self.health_check,
-            methods=['GET']
+            "/health", "health_check", self.health_check, methods=["GET"]
         )
 
     def health_check(self) -> Any:
@@ -28,7 +26,7 @@ class WSHealthCheck:
 
     def start_flask_app(self) -> None:
         """Flaskアプリを開始する"""
-        self.app.run(host='0.0.0.0', port=8080)
+        self.app.run(host="0.0.0.0", port=8080)
 
     def set_first_message_received(self, value: bool) -> None:
         """最初のメッセージが受信されたことを設定する
