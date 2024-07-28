@@ -4,6 +4,8 @@ from typing import Dict, List
 
 from pybotters import WebSocketQueue
 
+from src.libs.utils.logger import LogManager
+
 from ..aws_client import AwsClient
 
 
@@ -23,9 +25,10 @@ class Kinesis(AwsClient):
         Args:
             queue_in (WebSocketQueue): 入力キュー
         """
-        super().__init__(__class__.__name__.lower())
+        super().__init__("kinesis")
         self._queue_in = queue_in
-        self._client = self.get_boto3_client(__class__.__name__.lower())
+        self._client = self.get_boto3_client("kinesis")
+        self._logger = LogManager.get_logger(__name__)
         self._is_healthy = is_healthy
 
     async def publish(self, stream_name: str, tags: Dict) -> None:
@@ -47,10 +50,10 @@ class Kinesis(AwsClient):
                     Data=record,
                     PartitionKey="default"
                 )
-                self.logger.info(f"Published to Kinesis: {response}")
+                self._logger.info(f"Published to Kinesis: {response}")
                 self._is_healthy = True
             except Exception as e:
-                self.logger.error(f"Failed to publish to Kinesis: {e}")
+                self._logger.error(f"Failed to publish to Kinesis: {e}")
                 self._is_healthy = False
 
     def get_shard_iterator(
