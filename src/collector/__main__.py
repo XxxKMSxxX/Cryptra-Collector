@@ -50,7 +50,7 @@ if __name__ == "__main__":
         parser.add_argument("exchange", type=str)
         parser.add_argument("contract", type=str)
         parser.add_argument("symbol", type=str)
-        parser.add_argument("frequency", type=int, default=1)
+        parser.add_argument("--frequency", type=int, default=1)
         parser.add_argument(
             "--log_level",
             type=str,
