@@ -8,9 +8,19 @@ from src.libs.utils.logger import LogManager, add_logging
 
 JST = timezone(timedelta(hours=9))
 
-
 @add_logging
 class Candle:
+    """
+    ローソク足生成クラス
+
+    Attributes:
+        queue_in (WebSocketQueue): 入力となるWebSocketキュー
+        queue_out (WebSocketQueue): 出力となるWebSocketキュー
+        _freq (int): ローソク足の頻度（秒単位）
+        _candles (Dict[datetime, Dict[str, Any]]): ローソク足データを格納する辞書
+        _last_key (datetime): 最後に更新されたローソク足のキー
+    """
+
     def __init__(
         self,
         queue_in: WebSocketQueue,
@@ -18,6 +28,15 @@ class Candle:
         freq: int = 1,
         max_candles: int = 100,
     ):
+        """
+        コンストラクタ
+
+        Args:
+            queue_in (WebSocketQueue): 入力となるWebSocketキュー
+            queue_out (WebSocketQueue): 出力となるWebSocketキュー
+            freq (int, optional): ローソク足の頻度（秒単位）。デフォルトは1
+            max_candles (int, optional): 保持するローソク足の最大数。デフォルトは100
+        """
         self._logger = LogManager.get_logger(__name__)
 
         self.queue_in = queue_in
@@ -45,17 +64,36 @@ class Candle:
         self._last_key = None
 
     async def generate(self):
+        """
+        ローソク足生成を行う非同期メソッド
+
+        WebSocketQueueからデータを受信し、ローソク足データを更新する
+        """
         async for messages in self.queue_in:
             self._update_candle(messages)
 
     def _get_candle_key(self, timestamp: datetime) -> datetime:
+        """
+        ローソク足のキーを取得する
+
+        Args:
+            timestamp (datetime): タイムスタンプ
+
+        Returns:
+            datetime: ローソク足のキー
+        """
         return timestamp.replace(second=0, microsecond=0) + timedelta(
             seconds=(timestamp.second // self._freq) * self._freq
         )
 
     def _update_candle(self, trades: List[Dict[str, Any]]) -> None:
-        for trade in trades:
+        """
+        ローソク足データを更新する
 
+        Args:
+            trades (List[Dict[str, Any]]): 取引データのリスト
+        """
+        for trade in trades:
             key = self._get_candle_key(datetime.fromtimestamp(
                 trade["timestamp"] / 1000.0, timezone.utc
             ))
@@ -94,6 +132,9 @@ class Candle:
                 )
 
     def _finalize_candle(self) -> None:
+        """
+        ローソク足を確定し、出力キューに送信する
+        """
         if len(self._candles) > 1:
             current_candle = self._candles[self._last_key]
             if current_candle["timestamp"] is None:
