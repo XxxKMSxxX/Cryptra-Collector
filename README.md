@@ -1,7 +1,7 @@
 # crypt-data-collector
 
-[![ci](https://github.com/XxxKMSxxX/Cryptra-Collector/actions/workflows/ci.yml/badge.svg)](https://github.com/XxxKMSxxX/Cryptra-Collector/actions/workflows/ci.yml)
-[![deploy](https://github.com/XxxKMSxxX/Cryptra-Collector/actions/workflows/deploy.yml/badge.svg)](https://github.com/XxxKMSxxX/Cryptra-Collector/actions/workflows/deploy.yml)
+[![CI](https://github.com/XxxKMSxxX/Cryptra-Collector/actions/workflows/ci.yml/badge.svg)](https://github.com/XxxKMSxxX/Cryptra-Collector/actions/workflows/ci.yml)
+[![CD](https://github.com/XxxKMSxxX/Cryptra-Collector/actions/workflows/cd.yml/badge.svg)](https://github.com/XxxKMSxxX/Cryptra-Collector/actions/workflows/cd.yml)
 
 ## Execute
 
