@@ -53,7 +53,7 @@ class Kinesis(AwsClient):
                     Data=dumps(record).encode('utf-8'),
                     PartitionKey="default"
                 )
-                self._logger.info(f"Published to Kinesis: {response}")
+                self._logger.trace(f"Published to Kinesis: {response}")
                 self._is_healthy = True
             except Exception as e:
                 self._logger.error(f"Failed to publish to Kinesis: {e}")
