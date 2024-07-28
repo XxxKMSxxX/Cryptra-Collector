@@ -2,13 +2,13 @@ from typing import Tuple
 
 from .candle import Candle
 from .display import Display
+from .health_check import HealthCheck
 from .logger import LogManager, add_logging, trace
-from .ws_health_check import WSHealthCheck
 
 __all__: Tuple[str, ...] = (
     "Candle",
     "LogManager",
-    "WSHealthCheck",
+    "HealthCheck",
     "Display",
     "add_logging",
     "trace",

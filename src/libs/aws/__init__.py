@@ -1,7 +1,7 @@
 from typing import Tuple
 
-from .authorization import Authorization
+from .aws_client import AwsClient
 
 __all__: Tuple[str, ...] = (
-    "Authorization",
+    "AwsClient",
 )

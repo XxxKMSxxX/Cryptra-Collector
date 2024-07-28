@@ -5,8 +5,9 @@ from argparse import ArgumentParser, Namespace
 
 from pybotters import WebSocketQueue
 
+from src.libs.aws.serviceis import Kinesis
 from src.libs.exchange import load_exchange
-from src.libs.utils import Candle, Display, LogManager, trace
+from src.libs.utils import Candle, HealthCheck, LogManager, trace
 
 
 @trace
@@ -17,17 +18,27 @@ async def main(args: Namespace) -> None:
     Args:
         args: コマンドライン引数
     """
+    stream_name = "cryptra-collector"
+    tags = {
+        "exchange": args.exchange.lower(),
+        "contract": args.contract.lower(),
+        "symbol": args.symbol.lower()
+    }
+
+    is_healthy = False
     trade_queue = WebSocketQueue()
     candlestick_queue = WebSocketQueue()
 
     exchange = load_exchange(args, trade_queue)
-    candle = Candle(trade_queue, candlestick_queue)
-    display = Display(candlestick_queue)
+    candle = Candle(trade_queue, candlestick_queue, args.frequency)
+    kinesis = Kinesis(candlestick_queue, is_healthy)
+    health_check = HealthCheck(is_healthy)
 
     tasks = [
         exchange.subscribe(),
         candle.generate(),
-        display.run(),
+        kinesis.publish(stream_name, tags),
+        health_check.start(),
     ]
 
     await asyncio.gather(*(asyncio.create_task(task) for task in tasks))
@@ -39,10 +50,11 @@ if __name__ == "__main__":
         parser.add_argument("exchange", type=str)
         parser.add_argument("contract", type=str)
         parser.add_argument("symbol", type=str)
+        parser.add_argument("frequency", type=int, default=1)
         parser.add_argument(
             "--log_level",
             type=str,
-            default="WARNING",
+            default="INFO",
             choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
         )
         args: Namespace = parser.parse_args()

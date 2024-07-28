@@ -13,6 +13,8 @@ aiohttp = "^3.9.5"
 flask = "^3.0.3"
 numpy = "^2.0.1"
 rich = "^13.7.1"
+uvicorn = "^0.30.3"
+fastapi = "^0.111.1"
 
 [build-system]
 requires = ["poetry-core"]

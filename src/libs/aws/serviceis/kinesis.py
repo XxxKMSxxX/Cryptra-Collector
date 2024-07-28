@@ -1,42 +1,63 @@
 from __future__ import annotations
 
-from json import dumps
 from typing import Dict, List
+
+from pybotters import WebSocketQueue
 
 from ..aws_client import AwsClient
 
 
 class Kinesis(AwsClient):
-    def __init__(self, session_name: str):
+    """
+    Kinesisクラスは、AWS Kinesisストリームとのインターフェースを提供する。
+
+    Attributes:
+        _queue_in (WebSocketQueue): 入力データのキュー
+        _client (boto3.client): Kinesisクライアント
+    """
+
+    def __init__(self, queue_in: WebSocketQueue, is_healthy: bool = False):
         """
-        Kinesisクラスのコンストラクタ
+        Kinesisクラスのコンストラクタ。
 
         Args:
-            session_name (str): セッション名
+            queue_in (WebSocketQueue): 入力キュー
         """
-        super().__init__(session_name)
-        self._kinesis_client = self.get_boto3_client("kinesis")
+        super().__init__(__class__.__name__.lower())
+        self._queue_in = queue_in
+        self._client = self.get_boto3_client(__class__.__name__.lower())
+        self._is_healthy = is_healthy
 
-    def publish(self, stream_name: str, record: Dict) -> dict:
+    async def publish(self, stream_name: str, tags: Dict) -> None:
         """
-        レコードをKinesisストリームに送信する
+        レコードをKinesisストリームに送信する。
 
         Args:
             stream_name (str): Kinesisストリームの名前
-            record (Dict): 送信するレコード
+            tags (Dict): レコードに追加するタグ
 
         Returns:
-            dict: Kinesisに送信した結果
+            None
         """
-        return self._kinesis_client.put_record(
-            StreamName=stream_name, Data=dumps(record), PartitionKey="partition_key"
-        )
+        async for record in self._queue_in:
+            record.update(tags)
+            try:
+                response = self.client.put_record(
+                    StreamName=stream_name,
+                    Data=record,
+                    PartitionKey="default"
+                )
+                self.logger.info(f"Published to Kinesis: {response}")
+                self._is_healthy = True
+            except Exception as e:
+                self.logger.error(f"Failed to publish to Kinesis: {e}")
+                self._is_healthy = False
 
     def get_shard_iterator(
         self, stream_name: str, shard_id: str, iterator_type: str = "LATEST"
     ) -> str:
         """
-        Shard Iteratorを取得する
+        Shard Iteratorを取得する。
 
         Args:
             stream_name (str): Kinesisストリームの名前
@@ -46,14 +67,14 @@ class Kinesis(AwsClient):
         Returns:
             str: Shard Iterator
         """
-        response = self._kinesis_client.get_shard_iterator(
+        response = self._client.get_shard_iterator(
             StreamName=stream_name, ShardId=shard_id, ShardIteratorType=iterator_type
         )
         return response["ShardIterator"]
 
     def get_records(self, shard_iterator: str, limit: int = 10) -> List[Dict]:
         """
-        レコードを取得する
+        レコードを取得する。
 
         Args:
             shard_iterator (str): Shard Iterator
@@ -62,7 +83,7 @@ class Kinesis(AwsClient):
         Returns:
             List[Dict]: 取得したレコード
         """
-        response = self._kinesis_client.get_records(
+        response = self._client.get_records(
             ShardIterator=shard_iterator, Limit=limit
         )
         return response["Records"]
@@ -75,7 +96,7 @@ class Kinesis(AwsClient):
         limit: int = 10,
     ) -> List[Dict]:
         """
-        Kinesisストリームを購読し、データを取得する
+        Kinesisストリームを購読し、データを取得する。
 
         Args:
             stream_name (str): Kinesisストリームの名前

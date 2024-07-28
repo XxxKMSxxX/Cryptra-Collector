@@ -1,4 +1,3 @@
-import asyncio
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List
 
@@ -43,26 +42,11 @@ class Candle:
             },
             max_candles,
         )
-        self._current_key = None
         self._last_key = None
-        self._delay_seconds = 0.0
 
     async def generate(self):
-        while True:
-            messages = []
-            try:
-                messages = self.queue_in.get_nowait()
-            except asyncio.QueueEmpty:
-                await asyncio.sleep(0.001)  # CPUを使い果たさないように少し待つ
-                pass
-
-            # 約定履歴を受信した場合、ローソク足へ反映
-            if messages:
-                self._update_candle(messages)
-
-            # ローソク足の確定時刻を迎えた場合、ローソク足を確定
-            if self._current_key and self._is_reached_time_at_finalize():
-                self._finalize_candle()
+        async for messages in self.queue_in:
+            self._update_candle(messages)
 
     def _get_candle_key(self, timestamp: datetime) -> datetime:
         return timestamp.replace(second=0, microsecond=0) + timedelta(
@@ -71,25 +55,14 @@ class Candle:
 
     def _update_candle(self, trades: List[Dict[str, Any]]) -> None:
         for trade in trades:
-            timestamp_dt = datetime.fromtimestamp(
+
+            key = self._get_candle_key(datetime.fromtimestamp(
                 trade["timestamp"] / 1000.0, timezone.utc
-            )
-
-            key = self._get_candle_key(timestamp_dt)
-
-            local_receipt_time = datetime.now(timezone.utc)
-            delay = (local_receipt_time - timestamp_dt).total_seconds()
-            self._delay_seconds = max(self._delay_seconds, delay)
-
-            if self._current_key is None:
-                self._current_key = key
-            elif self._current_key > key:
-                self._logger.warn(f"確定済みローソク足の約定を受信: delay - {delay}")
+            ))
 
             candle = self._candles[key]
 
-            if candle["timestamp"] is None:
-                candle["timestamp"] = key.astimezone(JST).isoformat()
+            if candle["open"] is None:
                 candle["open"] = trade["price"]
 
             candle["high"] = max(candle["high"], trade["price"])
@@ -110,34 +83,19 @@ class Candle:
                 candle["sell_count"] += 1
                 candle["sell_value"] += trade["price"] * trade["size"]
 
-    def _is_reached_time_at_finalize(self) -> bool:
-        if self._current_key is None:
-            return False
-
-        finalize_time = (
-            self._current_key
-            + timedelta(seconds=self._freq)
-            + timedelta(seconds=self._delay_seconds)
-            + timedelta(milliseconds=10)  # バッファ
-        )
-        return datetime.now(timezone.utc) >= finalize_time
+            if self._last_key is None:
+                self._last_key = key
+            elif key > self._last_key:
+                self._finalize_candle()
+                self._last_key = key
+            elif key < self._last_key:
+                self._logger.warn(
+                    f"Received data for {key.astimezone(JST).isoformat()} is already finalized"
+                )
 
     def _finalize_candle(self) -> None:
-        if self._current_key is None:
-            return
-
-        current_candle = self._candles[self._current_key]
-        if current_candle["timestamp"] is None:
-            current_candle["timestamp"] = self._current_key.astimezone(JST).isoformat()
-
-            if self._last_key:
-                last_close = self._candles[self._last_key]["close"]
-                current_candle["open"] = last_close
-                current_candle["high"] = last_close
-                current_candle["low"] = last_close
-                current_candle["close"] = last_close
-
-        self.queue_out.put_nowait(current_candle)
-
-        self._last_key = self._current_key
-        self._current_key += timedelta(seconds=self._freq)
+        if len(self._candles) > 1:
+            current_candle = self._candles[self._last_key]
+            if current_candle["timestamp"] is None:
+                current_candle["timestamp"] = self._last_key.astimezone(JST).isoformat()
+            self.queue_out.put_nowait(current_candle)
