@@ -32,7 +32,7 @@ class AwsClient:
 
         if not self._aws_role_arn or not self._aws_region:
             raise EnvironmentError(
-                "環境変数 'AWS_ROLE_ARN' または 'AWS_REGION' が設定されていません"
+                "Environment variable 'AWS_ROLE_ARN' or 'AWS_REGION' is not set"
             )
 
     def assume_role(self):

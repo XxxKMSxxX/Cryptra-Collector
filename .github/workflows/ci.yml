@@ -1,4 +1,4 @@
-name: ci
+name: CI
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
       - 'test/**'
 
 jobs:
-  ci:
+  CI:
     runs-on: ubuntu-latest
 
     steps:
