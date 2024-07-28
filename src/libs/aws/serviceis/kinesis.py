@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from json import dumps
 from typing import Dict, List
 
 from pybotters import WebSocketQueue
@@ -16,6 +17,8 @@ class Kinesis(AwsClient):
     Attributes:
         _queue_in (WebSocketQueue): 入力データのキュー
         _client (boto3.client): Kinesisクライアント
+        _logger (logging.Logger): ロガー
+        _is_healthy (bool): Kinesisストリームの健康状態
     """
 
     def __init__(self, queue_in: WebSocketQueue, is_healthy: bool = False):
@@ -47,7 +50,7 @@ class Kinesis(AwsClient):
             try:
                 response = self._client.put_record(
                     StreamName=stream_name,
-                    Data=record,
+                    Data=dumps(record).encode('utf-8'),
                     PartitionKey="default"
                 )
                 self._logger.info(f"Published to Kinesis: {response}")
