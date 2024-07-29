@@ -3,14 +3,14 @@ from __future__ import annotations
 from json import dumps
 from typing import Dict, List
 
+import boto3
 from pybotters import WebSocketQueue
 
-from src.libs.utils.logger import LogManager
-
-from ..aws_client import AwsClient
+from src.libs.utils.logger import LogManager, add_logging
 
 
-class Kinesis(AwsClient):
+@add_logging
+class Kinesis:
     """
     Kinesisクラスは、AWS Kinesisストリームとのインターフェースを提供する。
 
@@ -30,7 +30,7 @@ class Kinesis(AwsClient):
         """
         super().__init__("kinesis")
         self._queue_in = queue_in
-        self._client = self.get_boto3_client("kinesis")
+        self._client = boto3.client("kinesis")
         self._logger = LogManager.get_logger(__name__)
         self._is_healthy = is_healthy
 
@@ -50,8 +50,8 @@ class Kinesis(AwsClient):
             try:
                 response = self._client.put_record(
                     StreamName=stream_name,
-                    Data=dumps(record).encode('utf-8'),
-                    PartitionKey="default"
+                    Data=dumps(record).encode("utf-8"),
+                    PartitionKey="default",
                 )
                 self._logger.trace(f"Published to Kinesis: {response}")
                 self._is_healthy = True
@@ -89,9 +89,7 @@ class Kinesis(AwsClient):
         Returns:
             List[Dict]: 取得したレコード
         """
-        response = self._client.get_records(
-            ShardIterator=shard_iterator, Limit=limit
-        )
+        response = self._client.get_records(ShardIterator=shard_iterator, Limit=limit)
         return response["Records"]
 
     def subscribe(
