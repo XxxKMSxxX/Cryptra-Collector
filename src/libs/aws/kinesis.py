@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from json import dumps
+from os import getenv
 from typing import Dict, List
 
 import boto3
@@ -26,10 +27,12 @@ class Kinesis:
         Kinesisクラスのコンストラクタ。
 
         Args:
+            region_name (str): AWSリージョン名
             queue_in (WebSocketQueue): 入力キュー
         """
         self._queue_in = queue_in
-        self._client = boto3.client("kinesis")
+        self._region_name = getenv("AWS_REGION", "")
+        self._client = boto3.client("kinesis", region_name=self._region_name)
         self._logger = LogManager.get_logger(__name__)
         self._is_healthy = is_healthy
 
