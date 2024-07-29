@@ -1,7 +1,5 @@
 from typing import Tuple
 
-from .aws_client import AwsClient
+from .kinesis import Kinesis
 
-__all__: Tuple[str, ...] = (
-    "AwsClient",
-)
+__all__: Tuple[str, ...] = ("Kinesis",)
