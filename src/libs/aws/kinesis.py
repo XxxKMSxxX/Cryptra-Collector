@@ -28,7 +28,6 @@ class Kinesis:
         Args:
             queue_in (WebSocketQueue): 入力キュー
         """
-        super().__init__("kinesis")
         self._queue_in = queue_in
         self._client = boto3.client("kinesis")
         self._logger = LogManager.get_logger(__name__)
