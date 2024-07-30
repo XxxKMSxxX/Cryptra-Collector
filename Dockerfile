@@ -31,7 +31,7 @@ COPY --from=build /usr/local/bin /usr/local/bin
 COPY src/ ./src
 
 # ポートを公開
-EXPOSE 8080
+EXPOSE 80
 
 # コンテナ起動時のデフォルトコマンドを設定
 CMD ["sh", "-c", "python -Bum collector ${EXCHANGE} ${CONTRACT} ${SYMBOL}"]
