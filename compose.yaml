@@ -33,7 +33,7 @@ services:
     <<: *collector
     container_name: bybit-spot-btcusdt
     ports:
-      - 8080:80
+      - 8080:8080
     environment:
       <<: [*bybit, *spot]
       SYMBOL: BTCUSDT
@@ -42,7 +42,7 @@ services:
     <<: *collector
     container_name: bybit-spot-ethusdt
     ports:
-      - 8081:80
+      - 8081:8080
     environment:
       <<: [*bybit, *spot]
       SYMBOL: ETHUSDT
@@ -51,7 +51,7 @@ services:
     <<: *collector
     container_name: bybit-spot-solusdt
     ports:
-      - 8082:80
+      - 8082:8080
     environment:
       <<: [*bybit, *spot]
       SYMBOL: SOLUSDT
@@ -61,7 +61,7 @@ services:
     <<: *collector
     container_name: bybit-linear-btcusdt
     ports:
-      - 8083:80
+      - 8083:8080
     environment:
       <<: [*bybit, *linear]
       SYMBOL: BTCUSDT
@@ -70,7 +70,7 @@ services:
     <<: *collector
     container_name: bybit-linear-ethusdt
     ports:
-      - 8084:80
+      - 8084:8080
     environment:
       <<: [*bybit, *linear]
       SYMBOL: ETHUSDT
@@ -79,7 +79,7 @@ services:
     <<: *collector
     container_name: bybit-linear-solusdt
     ports:
-      - 8085:80
+      - 8085:8080
     environment:
       <<: [*bybit, *linear]
       SYMBOL: SOLUSDT
@@ -89,7 +89,7 @@ services:
     <<: *collector
     container_name: bybit-inverse-btcusd
     ports:
-      - 8086:80
+      - 8086:8080
     environment:
       <<: [*bybit, *inverse]
       SYMBOL: BTCUSD
@@ -98,7 +98,7 @@ services:
     <<: *collector
     container_name: bybit-inverse-ethusd
     ports:
-      - 8087:80
+      - 8087:8080
     environment:
       <<: [*bybit, *inverse]
       SYMBOL: ETHUSD
@@ -107,7 +107,7 @@ services:
     <<: *collector
     container_name: bybit-inverse-solusd
     ports:
-      - 8088:80
+      - 8088:8080
     environment:
       <<: [*bybit, *inverse]
       SYMBOL: SOLUSD
@@ -117,7 +117,7 @@ services:
     <<: *collector
     container_name: binance-spot-btcusdt
     ports:
-      - 8089:80
+      - 8089:8080
     environment:
       <<: [*binance, *spot]
       SYMBOL: btcusdt
@@ -126,7 +126,7 @@ services:
     <<: *collector
     container_name: binance-spot-btcjpy
     ports:
-      - 8090:80
+      - 8090:8080
     environment:
       <<: [*binance, *spot]
       SYMBOL: btcjpy
@@ -135,7 +135,7 @@ services:
     <<: *collector
     container_name: binance-spot-ethusdt
     ports:
-      - 8091:80
+      - 8091:8080
     environment:
       <<: [*binance, *spot]
       SYMBOL: ethusdt
@@ -144,7 +144,7 @@ services:
     <<: *collector
     container_name: binance-spot-ethjpy
     ports:
-      - 8092:80
+      - 8092:8080
     environment:
       <<: [*binance, *spot]
       SYMBOL: ethjpy
@@ -153,7 +153,7 @@ services:
     <<: *collector
     container_name: binance-spot-solusdt
     ports:
-      - 8093:80
+      - 8093:8080
     environment:
       <<: [*binance, *spot]
       SYMBOL: solusdt
@@ -162,7 +162,7 @@ services:
     <<: *collector
     container_name: binance-spot-soljpy
     ports:
-      - 8094:80
+      - 8094:8080
     environment:
       <<: [*binance, *spot]
       SYMBOL: soljpy
@@ -172,7 +172,7 @@ services:
     <<: *collector
     container_name: binance-usdt_perpetual-btcusdt
     ports:
-      - 8095:80
+      - 8095:8080
     environment:
       <<: [*binance, *usdt_perpetual]
       SYMBOL: btcusdt
@@ -181,7 +181,7 @@ services:
     <<: *collector
     container_name: binance-usdt_perpetual-ethusdt
     ports:
-      - 8096:80
+      - 8096:8080
     environment:
       <<: [*binance, *usdt_perpetual]
       SYMBOL: ethusdt
@@ -190,7 +190,7 @@ services:
     <<: *collector
     container_name: binance-usdt_perpetual-solusdt
     ports:
-      - 8097:80
+      - 8097:8080
     environment:
       <<: [*binance, *usdt_perpetual]
       SYMBOL: solusdt
@@ -200,7 +200,7 @@ services:
     <<: *collector
     container_name: bitflyer-spot-btcjpy
     ports:
-      - 8098:80
+      - 8098:8080
     environment:
       <<: [*bitflyer, *spot]
       SYMBOL: BTC_JPY
@@ -209,7 +209,7 @@ services:
     <<: *collector
     container_name: bitflyer-spot-ethjpy
     ports:
-      - 8099:80
+      - 8099:8080
     environment:
       <<: [*bitflyer, *spot]
       SYMBOL: ETH_JPY
@@ -219,7 +219,7 @@ services:
     <<: *collector
     container_name: bitflyer-fx-fxbtcjpy
     ports:
-      - 8100:80
+      - 8100:8080
     environment:
       <<: [*bitflyer, *fx]
       SYMBOL: FX_BTC_JPY
