@@ -5,7 +5,7 @@ from argparse import ArgumentParser, Namespace
 
 from pybotters import WebSocketQueue
 
-from src.libs.aws import Kinesis
+from src.libs.aws.kinesis import Kinesis
 from src.libs.exchange import load_exchange
 from src.libs.utils import Candle, HealthCheck, LogManager, trace
 
@@ -25,14 +25,13 @@ async def main(args: Namespace) -> None:
         "symbol": args.symbol.lower(),
     }
 
-    is_healthy = False
     trade_queue = WebSocketQueue()
     candlestick_queue = WebSocketQueue()
 
     exchange = load_exchange(args, trade_queue)
     candle = Candle(trade_queue, candlestick_queue, args.frequency)
-    kinesis = Kinesis(candlestick_queue, is_healthy)
-    health_check = HealthCheck(is_healthy)
+    kinesis = Kinesis(candlestick_queue)
+    health_check = HealthCheck()
 
     tasks = [
         exchange.subscribe(),

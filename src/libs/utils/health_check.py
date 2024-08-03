@@ -1,11 +1,15 @@
+import asyncio
+
 import uvicorn
 from fastapi import FastAPI, Response
 
 
 class HealthCheck:
-    def __init__(self, is_healthy: bool = True):
+    condition = asyncio.Condition()
+    is_healthy = True
+
+    def __init__(self):
         self.app = FastAPI()
-        self._is_healthy = is_healthy
         self._setup_routes()
 
     def _setup_routes(self):
@@ -17,21 +21,26 @@ class HealthCheck:
             Returns:
                 dict: ステータスメッセージ
             """
-            if self._is_healthy:
-                response.status_code = 200
-                return {"status": "ok"}
-            else:
-                response.status_code = 503
-                return {"status": "unhealthy"}
+            async with HealthCheck.condition:
+                if HealthCheck.is_healthy:
+                    response.status_code = 200
+                    return {"status": "ok"}
+                else:
+                    response.status_code = 503
+                    return {"status": "unhealthy"}
 
-    def set_health_status(self, is_healthy: bool):
+    @classmethod
+    async def set_health_status(cls, is_healthy: bool):
         """
         ヘルスステータスを設定するメソッド
 
         Args:
             is_healthy (bool): ヘルスステータス
         """
-        self._is_healthy = is_healthy
+        async with cls.condition:
+            if cls.is_healthy != is_healthy:
+                cls.is_healthy = is_healthy
+                cls.condition.notify_all()
 
     async def start(self):
         """
