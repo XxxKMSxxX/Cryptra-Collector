@@ -7,6 +7,7 @@ from typing import Dict, List
 import boto3
 from pybotters import WebSocketQueue
 
+from src.libs.utils.health_check import HealthCheck
 from src.libs.utils.logger import LogManager, add_logging
 
 
@@ -19,10 +20,9 @@ class Kinesis:
         _queue_in (WebSocketQueue): 入力データのキュー
         _client (boto3.client): Kinesisクライアント
         _logger (logging.Logger): ロガー
-        _is_healthy (bool): Kinesisストリームの健康状態
     """
 
-    def __init__(self, queue_in: WebSocketQueue, is_healthy: bool = False):
+    def __init__(self, queue_in: WebSocketQueue):
         """
         Kinesisクラスのコンストラクタ。
 
@@ -34,7 +34,6 @@ class Kinesis:
         self._region_name = getenv("AWS_REGION", "")
         self._client = boto3.client("kinesis", region_name=self._region_name)
         self._logger = LogManager.get_logger(__name__)
-        self._is_healthy = is_healthy
 
     async def publish(self, stream_name: str, tags: Dict) -> None:
         """
@@ -56,10 +55,10 @@ class Kinesis:
                     PartitionKey="default",
                 )
                 self._logger.debug(f"Published to Kinesis: {response}")
-                self._is_healthy = True
+                await HealthCheck.set_health_status(True)
             except Exception as e:
                 self._logger.error(f"Failed to publish to Kinesis: {e}")
-                self._is_healthy = False
+                await HealthCheck.set_health_status(False)
 
     def get_shard_iterator(
         self, stream_name: str, shard_id: str, iterator_type: str = "LATEST"

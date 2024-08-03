@@ -8,7 +8,13 @@
 ### Python
 
 ```bash
-python -Bum collector ${EXCHANGE} ${CONTRACT} ${SYMBOL} ${AWS_REGION}
+python -Bum collector ${EXCHANGE} ${CONTRACT} ${SYMBOL}
+```
+
+### health check
+
+```bash
+curl -v http://localhost:8100/health
 ```
 
 ## Reference
